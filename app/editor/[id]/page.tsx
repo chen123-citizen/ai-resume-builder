@@ -134,6 +134,53 @@ const handlePrint = () => {
     };
   };
 
+  const toggleSectionVisible = (
+    module: "education" | "experience" | "campus" | "awards" | "skills"
+  ) => {
+    setResume((r) => ({
+      ...r,
+      sections: {
+        ...r.sections,
+        [module]: !((r.sections as any)?.[module]),
+      },
+    }));
+  };
+  
+  const clearModuleContent = (
+    module: "education" | "experience" | "campus" | "awards" | "skills"
+  ) => {
+    setResume((r) => {
+      const next = { ...r };
+  
+      if (module === "education") {
+        next.education = [];
+      }
+      if (module === "experience") {
+        next.experience = [];
+      }
+      if (module === "campus") {
+        next.campus = [];
+      }
+      if (module === "awards") {
+        next.awards = [];
+      }
+      if (module === "skills") {
+        next.skills = { categories: [] };
+      }
+  
+      next.sections = {
+        ...r.sections,
+        [module]: false,
+      };
+  
+      return next;
+    });
+  
+    if (activeModule === module) {
+      setActiveModule("basics");
+    }
+  };
+
   // 读取数据库中的简历；失败时回退到本地缓存
   useEffect(() => {
     const loadResumeFromDB = async () => {
@@ -661,157 +708,212 @@ const handlePrint = () => {
             </div>
 
             {/* 模块选择 */}
-            <div className="mt-6 text-sm font-semibold tracking-tight text-slate-800">
-              模块选择
+            <div className="mt-6">
+              <div className="text-sm font-semibold tracking-tight text-slate-800">
+                模块选择
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {[
+                  ["basics", "基本信息"],
+                  ["education", "教育背景"],
+                  ["experience", "实习/工作"],
+                  ["campus", "校园经历"],
+                  ["awards", "获奖经历"],
+                  ["skills", "技能"],
+                ].map(([key, label]) => {
+                  const module = key as
+                    | "basics"
+                    | "education"
+                    | "experience"
+                    | "campus"
+                    | "awards"
+                    | "skills";
+
+                  const active = activeModule === module;
+                  const enabled =
+                    module === "basics"
+                      ? true
+                      : Boolean((resume.sections as any)?.[module]);
+
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 p-2"
+                    >
+                      <button
+                        type="button"
+                        className={
+                          "min-w-0 flex-1 rounded-xl px-3 py-2 text-left text-xs font-medium transition-all duration-200 " +
+                          (active
+                            ? "bg-slate-900 text-white"
+                            : "bg-white text-slate-700 hover:bg-slate-50")
+                        }
+                        onClick={() => setActiveModule(module)}
+                      >
+                        {label}
+                      </button>
+
+                      {module === "basics" ? (
+                        <div className="shrink-0 rounded-xl bg-slate-100 px-3 py-2 text-[11px] font-medium text-slate-500">
+                          固定
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className={
+                              "shrink-0 rounded-xl px-3 py-2 text-[11px] font-medium transition-all duration-200 " +
+                              (enabled
+                                ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
+                                : "bg-slate-100 text-slate-500 hover:bg-slate-200")
+                            }
+                            onClick={() =>
+                              toggleSectionVisible(
+                                module as
+                                  | "education"
+                                  | "experience"
+                                  | "campus"
+                                  | "awards"
+                                  | "skills"
+                              )
+                            }
+                            title={enabled ? "点击后从简历中隐藏" : "点击后显示到简历中"}
+                          >
+                            {enabled ? "显示中" : "已隐藏"}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="shrink-0 rounded-xl bg-red-50 px-3 py-2 text-[11px] font-medium text-red-600 transition-all duration-200 hover:bg-red-100"
+                            onClick={() =>
+                              clearModuleContent(
+                                module as
+                                  | "education"
+                                  | "experience"
+                                  | "campus"
+                                  | "awards"
+                                  | "skills"
+                              )
+                            }
+                            title="清空该模块内容并从简历中隐藏"
+                          >
+                            清空
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+            {/* 基本信息 */}
+            {activeModule === "basics" && (
+              <div className="mt-6">
+                <div className="mb-3 text-sm font-semibold tracking-tight text-slate-800">
+                  基本信息
+                </div>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              {[
-                ["basics", "基本信息"],
-                ["education", "教育背景"],
-                ["experience", "实习/工作"],
-                ["campus", "校园经历"],
-                ["awards", "获奖经历"],
-                ["skills", "技能"],
-              ].map(([key, label]) => {
-                const active = activeModule === key;
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {(["name", "title", "phone", "email", "city"] as const).map((k) => (
+                    <label key={k} className="text-xs text-neutral-600">
+                      {k.toUpperCase()}
+                      <input
+                        className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                        value={(resume.basics as any)[k] ?? ""}
+                        onChange={(e) =>
+                          setResume((r) => ({
+                            ...r,
+                            basics: { ...r.basics, [k]: e.target.value },
+                          }))
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
 
-                return (
-                  <button
-                    key={key}
-                    className={
-                      "rounded-full px-3 py-1.5 text-xs font-medium border transition-all duration-200 " +
-                      (active
-                        ? "border-slate-900 bg-slate-900 text-white"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50")
-                    }
-                    onClick={() =>
-                      setActiveModule(
-                        key as
-                          | "basics"
-                          | "education"
-                          | "experience"
-                          | "campus"
-                          | "awards"
-                          | "skills"
-                      )
-                    }
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-        {activeModule === "basics" && (
-          <div className="mt-6">
-            {/* 基本信息填写 */}
-            <div className="mb-3 text-sm font-semibold tracking-tight text-slate-800">基本信息</div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {(["name", "title", "phone", "email", "city"] as const).map((k) => (
-                <label key={k} className="text-xs text-neutral-600">
-                  {k.toUpperCase()}
+                <label className="mt-4 flex items-center gap-2 text-xs text-neutral-700">
                   <input
-                    className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200"
-                    value={(resume.basics as any)[k] ?? ""}
+                    type="checkbox"
+                    checked={resume.basics.showPhoto ?? false}
                     onChange={(e) =>
-                      setResume((r) => ({
-                        ...r,
-                        basics: { ...r.basics, [k]: e.target.value },
-                      }))
-                    }
-                  />
-                </label>
-              ))}
-            </div>
-
-            <label className="mt-4 flex items-center gap-2 text-xs text-neutral-700">
-              <input
-                type="checkbox"
-                checked={resume.basics.showPhoto ?? false}
-                onChange={(e) =>
-                  setResume((r) => ({
-                    ...r,
-                    basics: {
-                      ...r.basics,
-                      showPhoto: e.target.checked,
-                    },
-                  }))
-                }
-              />
-              显示头像
-            </label>
-
-            {/* 头像上传 */}
-            <div className="mt-4">
-              <div className="text-xs text-neutral-600">头像</div>
-
-              <div className="mt-2 flex items-center gap-3">
-                {resume.basics.photo ? (
-                  <img
-                    src={resume.basics.photo}
-                    className="w-16 h-16 rounded-lg object-cover border border-neutral-200"
-                    alt="头像预览"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-lg border border-dashed border-neutral-300 flex items-center justify-center text-xs text-neutral-400">
-                    无头像
-                  </div>
-                )}
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-
-                    const reader = new FileReader();
-
-                    reader.onload = () => {
                       setResume((r) => ({
                         ...r,
                         basics: {
                           ...r.basics,
-                          photo: reader.result as string,
+                          showPhoto: e.target.checked,
                         },
-                      }));
-                    };
-
-                    reader.readAsDataURL(file);
-                  }}
-                />
-
-                {resume.basics.photo && (
-                  <button
-                    className="text-xs text-red-500 hover:underline"
-                    onClick={() =>
-                      setResume((r) => ({
-                        ...r,
-                        basics: { ...r.basics, photo: "" },
                       }))
                     }
-                  >
-                    删除
-                  </button>
-                )}
+                  />
+                  显示头像
+                </label>
+
+                <div className="mt-4">
+                  <div className="text-xs text-neutral-600">头像</div>
+
+                  <div className="mt-2 flex items-center gap-3">
+                    {resume.basics.photo ? (
+                      <img
+                        src={resume.basics.photo}
+                        className="h-16 w-16 rounded-lg border border-neutral-200 object-cover"
+                        alt="头像预览"
+                      />
+                    ) : (
+                      <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-neutral-300 text-xs text-neutral-400">
+                        无头像
+                      </div>
+                    )}
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setResume((r) => ({
+                            ...r,
+                            basics: {
+                              ...r.basics,
+                              photo: reader.result as string,
+                            },
+                          }));
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+
+                    {resume.basics.photo && (
+                      <button
+                        className="text-xs text-red-500 hover:underline"
+                        onClick={() =>
+                          setResume((r) => ({
+                            ...r,
+                            basics: { ...r.basics, photo: "" },
+                          }))
+                        }
+                      >
+                        删除
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-
-          </div>
-        )}
-
+            )}
             {/* 教育背景 */}
             {activeModule === "education" && (
               <div className="mt-6">
-                <div className="text-sm font-semibold text-neutral-800">
+                <div className="text-sm font-semibold tracking-tight text-slate-800">
                   教育背景
                 </div>
                 <div className="mt-3 space-y-3">
                   {resume.education.map((edu, idx) => (
                     <div
                       key={idx}
-                      className="rounded-2xl border border-neutral-200 p-3"
+                      className="rounded-2xl border border-slate-200 bg-white/90 p-3"
                     >
                       <div className="mb-2 flex items-center justify-between">
                         <div className="text-xs font-medium text-neutral-700">
@@ -828,7 +930,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           学校
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={edu.school}
                             onChange={(e) =>
                               updateEducationItem(idx, {
@@ -840,7 +942,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           专业
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={edu.major}
                             onChange={(e) =>
                               updateEducationItem(idx, {
@@ -852,7 +954,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           学位
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={edu.degree}
                             onChange={(e) =>
                               updateEducationItem(idx, {
@@ -865,7 +967,7 @@ const handlePrint = () => {
                           起止时间
                           <div className="mt-1 grid grid-cols-2 gap-2">
                             <input
-                              className="rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                              className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                               placeholder="开始"
                               value={edu.start}
                               onChange={(e) =>
@@ -875,7 +977,7 @@ const handlePrint = () => {
                               }
                             />
                             <input
-                              className="rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                              className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                               placeholder="结束"
                               value={edu.end}
                               onChange={(e) =>
@@ -906,7 +1008,7 @@ const handlePrint = () => {
                     </div>
                   ))}
                   <button
-                    className="w-full rounded-xl border border-dashed border-neutral-300 py-2 text-xs font-medium text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
+                    className="w-full rounded-xl border border-dashed border-slate-300 py-2 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50"
                     onClick={addEducationItem}
                   >
                     + 新增一条教育经历
@@ -918,14 +1020,14 @@ const handlePrint = () => {
             {/* 实习/工作经历 */}
             {activeModule === "experience" && (
               <div className="mt-6">
-                <div className="text-sm font-semibold text-neutral-800">
+                <div className="text-sm font-semibold tracking-tight text-slate-800">
                   实习 / 工作经历
                 </div>
                 <div className="mt-3 space-y-3">
                   {resume.experience.map((exp, idx) => (
                     <div
                       key={idx}
-                      className="rounded-2xl border border-neutral-200 p-3"
+                      className="rounded-2xl border border-slate-200 bg-white/90 p-3"
                     >
                       <div className="mb-2 flex items-center justify-between">
                         <div className="text-xs font-medium text-neutral-700">
@@ -942,7 +1044,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           公司
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={exp.company}
                             onChange={(e) =>
                               updateExperienceItem(idx, {
@@ -954,7 +1056,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           岗位
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={exp.role}
                             onChange={(e) =>
                               updateExperienceItem(idx, {
@@ -966,7 +1068,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           开始
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={exp.start}
                             onChange={(e) =>
                               updateExperienceItem(idx, {
@@ -978,7 +1080,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           结束
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={exp.end}
                             onChange={(e) =>
                               updateExperienceItem(idx, {
@@ -1022,7 +1124,7 @@ const handlePrint = () => {
                     </div>
                   ))}
                   <button
-                    className="w-full rounded-xl border border-dashed border-neutral-300 py-2 text-xs font-medium text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
+                    className="w-full rounded-xl border border-dashed border-slate-300 py-2 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50"
                     onClick={addExperienceItem}
                   >
                     + 新增一条经历
@@ -1037,14 +1139,14 @@ const handlePrint = () => {
             {/* 校园经历 */}
             {activeModule === "campus" && (
               <div className="mt-6">
-                <div className="text-sm font-semibold text-neutral-800">
+                <div className="text-sm font-semibold tracking-tight text-slate-800">
                   校园经历
                 </div>
                 <div className="mt-3 space-y-3">
                   {resume.campus.map((c, idx) => (
                     <div
                       key={idx}
-                      className="rounded-2xl border border-neutral-200 p-3"
+                      className="rounded-2xl border border-slate-200 bg-white/90 p-3"
                     >
                       <div className="mb-2 flex items-center justify-between">
                         <div className="text-xs font-medium text-neutral-700">
@@ -1061,7 +1163,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           组织/社团
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={c.org}
                             onChange={(e) =>
                               updateCampusItem(idx, { org: e.target.value })
@@ -1071,7 +1173,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           职务
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={c.role}
                             onChange={(e) =>
                               updateCampusItem(idx, { role: e.target.value })
@@ -1082,7 +1184,7 @@ const handlePrint = () => {
                           起止时间
                           <div className="mt-1 grid grid-cols-2 gap-2">
                             <input
-                              className="rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                              className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                               placeholder="开始"
                               value={c.start}
                               onChange={(e) =>
@@ -1090,7 +1192,7 @@ const handlePrint = () => {
                               }
                             />
                             <input
-                              className="rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                              className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                               placeholder="结束"
                               value={c.end}
                               onChange={(e) =>
@@ -1114,7 +1216,7 @@ const handlePrint = () => {
                     </div>
                   ))}
                   <button
-                    className="w-full rounded-xl border border-dashed border-neutral-300 py-2 text-xs font-medium text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
+                    className="w-full rounded-xl border border-dashed border-slate-300 py-2 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50"
                     onClick={addCampusItem}
                   >
                     + 新增一条校园经历
@@ -1126,14 +1228,14 @@ const handlePrint = () => {
             {/* 获奖经历 */}
             {activeModule === "awards" && (
               <div className="mt-6">
-                <div className="text-sm font-semibold text-neutral-800">
+                <div className="text-sm font-semibold tracking-tight text-slate-800">
                   获奖经历
                 </div>
                 <div className="mt-3 space-y-3">
                   {resume.awards.map((a, idx) => (
                     <div
                       key={idx}
-                      className="rounded-2xl border border-neutral-200 p-3"
+                      className="rounded-2xl border border-slate-200 bg-white/90 p-3"
                     >
                       <div className="mb-2 flex items-center justify-between">
                         <div className="text-xs font-medium text-neutral-700">
@@ -1150,7 +1252,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           奖项名称
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={a.title}
                             onChange={(e) =>
                               updateAwardItem(idx, { title: e.target.value })
@@ -1160,7 +1262,7 @@ const handlePrint = () => {
                         <label className="text-xs text-neutral-600">
                           时间
                           <input
-                            className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                             value={a.date}
                             onChange={(e) =>
                               updateAwardItem(idx, { date: e.target.value })
@@ -1182,7 +1284,7 @@ const handlePrint = () => {
                     </div>
                   ))}
                   <button
-                    className="w-full rounded-xl border border-dashed border-neutral-300 py-2 text-xs font-medium text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
+                    className="w-full rounded-xl border border-dashed border-slate-300 py-2 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50"
                     onClick={addAwardItem}
                   >
                     + 新增一条获奖经历
@@ -1194,16 +1296,18 @@ const handlePrint = () => {
             {/* 技能 */}
             {activeModule === "skills" && (
               <div className="mt-6">
-                <div className="text-sm font-semibold text-neutral-800">技能</div>
+                <div className="text-sm font-semibold tracking-tight text-slate-800">
+                  技能
+                </div>
                 <div className="mt-3 space-y-3">
                   {resume.skills.categories.map((c, idx) => (
                     <div
                       key={idx}
-                      className="rounded-2xl border border-neutral-200 p-3"
+                      className="rounded-2xl border border-slate-200 bg-white/90 p-3"
                     >
                       <div className="mb-2 flex items-center justify-between gap-2">
                         <input
-                          className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                          className="w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                           value={c.name}
                           onChange={(e) =>
                             updateSkillCategoryName(idx, e.target.value)
@@ -1230,7 +1334,7 @@ const handlePrint = () => {
                     </div>
                   ))}
                   <button
-                    className="w-full rounded-xl border border-dashed border-neutral-300 py-2 text-xs font-medium text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
+                    className="w-full rounded-xl border border-dashed border-slate-300 py-2 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50"
                     onClick={addSkillCategory}
                   >
                     + 新增技能分类
@@ -1238,6 +1342,7 @@ const handlePrint = () => {
                 </div>
               </div>
             )}
+
           </div>
 
           {/* Medium: preview */}
