@@ -16,10 +16,7 @@ export default function ResumePreview({
   const sections = resume.sections ?? defaultResume.sections;
 
   return (
-    <div
-      id="resume-print-area"
-      className="w-full overflow-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-4"
-    >
+    <div className="w-full overflow-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
       <div className="shadow-sm">
         {template === "classic" ? (
           <ClassicTemplate resume={{ ...resume, sections }} />
