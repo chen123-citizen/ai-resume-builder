@@ -59,11 +59,18 @@ export default function EditorDetailPage() {
     "basics" | "education" | "experience" | "campus" | "awards" | "skills"
   >("basics");
 
-  const hasLoadedRef = useRef(false);
+const hasLoadedRef = useRef(false);
+const printRef = useRef<HTMLDivElement | null>(null);
 
-  const handlePrint = () => {
-    window.print();
-  };
+const handlePrint = () => {
+  if (!printRef.current) return;
+
+  document.body.classList.add("resume-printing");
+  window.print();
+  setTimeout(() => {
+    document.body.classList.remove("resume-printing");
+  }, 300);
+};
 
   const handleAnalyzeJD = async () => {
     if (!jdText.trim()) {
@@ -1341,22 +1348,13 @@ export default function EditorDetailPage() {
                 </div>
               </div>
               <div className="rounded-[24px] bg-[#f8fafc] p-3 md:p-4">
-                <ResumePreview resume={resume} template={template} />
+                <div id="resume-print-area" ref={printRef}>
+                  <ResumePreview resume={resume} template={template} />
+                </div>
               </div>
             </div>
 
-            {/* PDF 导出 */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-              <div className="text-sm font-semibold text-neutral-800">导出</div>
-              <div className="mt-3 flex gap-2">
-                <button
-                  className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-                  onClick={handlePrint}
-                >
-                  导出 PDF
-                </button>
-              </div>
-            </div>
+            
           </div>
         </div>
       </div>
@@ -1405,6 +1403,37 @@ export default function EditorDetailPage() {
       >
         打开 AI
       </button>
+      <style jsx global>{`
+        @media print {
+          body.resume-printing * {
+            visibility: hidden !important;
+          }
+
+          body.resume-printing #resume-print-area,
+          body.resume-printing #resume-print-area * {
+            visibility: visible !important;
+          }
+
+          body.resume-printing #resume-print-area {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          body.resume-printing {
+            background: white !important;
+          }
+
+          @page {
+            size: A4;
+            margin: 12mm;
+          }
+        }
+      `}</style>
     </div>
   );
 }
