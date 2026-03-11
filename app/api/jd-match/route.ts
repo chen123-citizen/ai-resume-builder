@@ -85,8 +85,10 @@ export async function POST(req: NextRequest) {
 
     if (!resp.ok) {
       const text = await resp.text();
+      console.error("AI 请求失败：", resp.status, text);
+
       return NextResponse.json(
-        { error: `AI 请求失败：${resp.status} ${text}` },
+        { error: `AI 请求失败：${resp.status}` },
         { status: 500 }
       );
     }
