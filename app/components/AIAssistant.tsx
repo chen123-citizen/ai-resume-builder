@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { Resume } from "@/app/lib/resumeSchema";
 import ReactMarkdown from "react-markdown";
 import {
@@ -56,6 +57,7 @@ type Props = {
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
 
+
 const PROGRESS_STEPS = [
   "正在读取你的简历与 JD…",
   "正在提取关键词与能力点…",
@@ -64,6 +66,9 @@ const PROGRESS_STEPS = [
 ] as const;
 
 export default function AIAssistant({ resume, jd, setResume, className }: Props) {
+  const pathname = usePathname();
+  const resumeId = pathname.split("/").pop() || "unknown";
+  
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isSending, setIsSending] = useState(false);
@@ -79,6 +84,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
   const [showPatchPanel, setShowPatchPanel] = useState(false);
 
   const messagesRef = useRef<ChatMsg[]>([]);
+  const hasLoadedChatRef = useRef(false);
   const setMessagesSafe = (updater: (prev: ChatMsg[]) => ChatMsg[]) => {
     setMessages((prev) => {
       const next = updater(prev);
@@ -86,6 +92,35 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
       return next;
     });
   };
+
+  useEffect(() => {
+    if (!resumeId) return;
+  
+    hasLoadedChatRef.current = false;
+  
+    const key = `ai-chat-${resumeId}`;
+    const cached = localStorage.getItem(key);
+  
+    try {
+      const parsed = cached ? JSON.parse(cached) : [];
+      setMessages(parsed);
+      messagesRef.current = parsed;
+    } catch {
+      setMessages([]);
+      messagesRef.current = [];
+    } finally {
+      hasLoadedChatRef.current = true;
+    }
+  }, [resumeId]);
+
+
+  useEffect(() => {
+    if (!resumeId) return;
+    if (!hasLoadedChatRef.current) return;
+  
+    const key = `ai-chat-${resumeId}`;
+    localStorage.setItem(key, JSON.stringify(messages));
+  }, [messages, resumeId]);
 
   // 自动滚到底部
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -401,8 +436,11 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
 
   const clearChat = () => {
     if (isSending) return;
+  
     setMessages([]);
     messagesRef.current = [];
+    localStorage.removeItem(`ai-chat-${resumeId}`);
+  
     setLastError(null);
     setLastUserMessage(null);
     setProgressText(null);
