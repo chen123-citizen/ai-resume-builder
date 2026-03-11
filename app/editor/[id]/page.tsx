@@ -55,6 +55,10 @@ export default function EditorDetailPage() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [undoSnapshot, setUndoSnapshot] = useState<Resume | null>(null);
 
+  const [activeModule, setActiveModule] = useState<
+    "basics" | "education" | "experience" | "campus" | "awards" | "skills"
+  >("basics");
+
   const hasLoadedRef = useRef(false);
 
   const handlePrint = () => {
@@ -531,9 +535,9 @@ export default function EditorDetailPage() {
 
   if (loadingPage) {
     return (
-      <div className="min-h-screen bg-neutral-100">
-        <div className="mx-auto max-w-4xl p-8">
-          <div className="rounded-2xl bg-white p-6 text-sm text-neutral-600 shadow-sm">
+      <div className="min-h-screen bg-[#f5f7fb] px-4 py-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="rounded-[24px] border border-white/60 bg-white/80 p-6 text-sm text-slate-600 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
             正在加载这份简历…
           </div>
         </div>
@@ -542,29 +546,49 @@ export default function EditorDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-100">
-      <div className="mx-auto max-w-screen-2xl p-6 xl:pr-[420px]">
-        <div className="mb-4 flex items-center justify-between">
+    <div className="relative min-h-screen overflow-hidden bg-[#f5f7fb]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-100px] top-[-60px] h-[260px] w-[260px] rounded-full bg-[rgba(78,110,255,0.10)] blur-3xl" />
+        <div className="absolute right-[-60px] top-[120px] h-[240px] w-[240px] rounded-full bg-[rgba(99,102,241,0.08)] blur-3xl" />
+        <div className="absolute bottom-[-80px] left-[28%] h-[220px] w-[220px] rounded-full bg-[rgba(148,163,184,0.14)] blur-3xl" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 lg:px-8 xl:pr-[400px]">
+      <div className="mb-6 rounded-[28px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl md:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xl font-semibold">简历编辑器</div>
-            <div className="text-sm text-neutral-600">
-              {saving ? "正在自动保存..." : "已连接数据库自动保存"}
+            <div className="inline-flex items-center rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-xs tracking-[0.18em] text-slate-500 uppercase shadow-sm">
+              Resume Editor
             </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+              简历编辑器
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              {saving ? "正在自动保存..." : "已连接数据库自动保存"}
+            </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              className="rounded-2xl border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+              onClick={handlePrint}
+            >
+              导出 PDF
+            </button>
+
             <a
-              className="rounded-xl bg-white px-4 py-2 text-sm font-medium shadow-sm hover:shadow"
+              className="rounded-2xl bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_55%,#334155_100%)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(15,23,42,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.24)]"
               href="/dashboard"
             >
               返回 Dashboard
             </a>
           </div>
         </div>
+      </div>
 
-        <div className="grid gap-6 lg:grid-cols-[460px_1fr] lg:items-start">
+      <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)] xl:items-start">
           {/* Left: form + 历史版本列表*/}
-          <div className="rounded-2xl border border-neutral-200 bg-white p-5">
+          <div className="rounded-[28px] border border-white/70 bg-white/85 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl">
             
 
             <div className="mb-4">
@@ -605,10 +629,10 @@ export default function EditorDetailPage() {
             </div>
 
             {/* JD 输入框 */}
-            <div className="text-sm font-semibold text-neutral-800">岗位描述 (JD)</div>
+            <div className="mb-3 text-sm font-semibold tracking-tight text-slate-800">岗位描述 (JD)</div>
             <div className="mt-3">
               <textarea
-                className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                 rows={6}
                 placeholder="粘贴岗位描述（任职要求 + 岗位职责）"
                 value={jdText}
@@ -630,36 +654,40 @@ export default function EditorDetailPage() {
             </div>
 
             {/* 模块选择 */}
-            <div className="mt-6 text-sm font-semibold text-neutral-800">
+            <div className="mt-6 text-sm font-semibold tracking-tight text-slate-800">
               模块选择
             </div>
+
             <div className="mt-3 flex flex-wrap gap-2">
               {[
+                ["basics", "基本信息"],
                 ["education", "教育背景"],
                 ["experience", "实习/工作"],
                 ["campus", "校园经历"],
                 ["awards", "获奖经历"],
                 ["skills", "技能"],
               ].map(([key, label]) => {
-                const active = (sections as any)[key];
+                const active = activeModule === key;
+
                 return (
                   <button
                     key={key}
                     className={
-                      "rounded-full px-3 py-1 text-xs font-medium border " +
+                      "rounded-full px-3 py-1.5 text-xs font-medium border transition-all duration-200 " +
                       (active
-                        ? "border-neutral-900 bg-neutral-900 text-white"
-                        : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-300")
+                        ? "border-slate-900 bg-slate-900 text-white"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50")
                     }
                     onClick={() =>
-                      setResume((r) => ({
-                        ...r,
-                        sections: {
-                          ...defaultResume.sections,
-                          ...(r.sections || {}),
-                          [key]: !active,
-                        } as any,
-                      }))
+                      setActiveModule(
+                        key as
+                          | "basics"
+                          | "education"
+                          | "experience"
+                          | "campus"
+                          | "awards"
+                          | "skills"
+                      )
                     }
                   >
                     {label}
@@ -668,8 +696,10 @@ export default function EditorDetailPage() {
               })}
             </div>
 
+        {activeModule === "basics" && (
+          <div className="mt-6">
             {/* 基本信息填写 */}
-            <div className="mt-6 text-sm font-semibold text-neutral-800">基本信息</div>
+            <div className="mb-3 text-sm font-semibold tracking-tight text-slate-800">基本信息</div>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {(["name", "title", "phone", "email", "city"] as const).map((k) => (
                 <label key={k} className="text-xs text-neutral-600">
@@ -761,8 +791,11 @@ export default function EditorDetailPage() {
               </div>
             </div>
 
+          </div>
+        )}
+
             {/* 教育背景 */}
-            {sections.education && (
+            {activeModule === "education" && (
               <div className="mt-6">
                 <div className="text-sm font-semibold text-neutral-800">
                   教育背景
@@ -850,7 +883,7 @@ export default function EditorDetailPage() {
                       <label className="mt-3 block text-xs text-neutral-600">
                         亮点（每行一条，如绩点/排名/奖学金）
                         <textarea
-                          className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                          className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                           rows={3}
                           value={(edu.highlights || []).join("\n")}
                           onChange={(e) =>
@@ -876,7 +909,7 @@ export default function EditorDetailPage() {
             )}
 
             {/* 实习/工作经历 */}
-            {sections.experience && (
+            {activeModule === "experience" && (
               <div className="mt-6">
                 <div className="text-sm font-semibold text-neutral-800">
                   实习 / 工作经历
@@ -951,7 +984,7 @@ export default function EditorDetailPage() {
                       <label className="mt-3 block text-xs text-neutral-600">
                         原始描述（可粘贴流水账）
                         <textarea
-                          className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                          className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                           rows={4}
                           value={exp.summary}
                           onChange={(e) =>
@@ -995,7 +1028,7 @@ export default function EditorDetailPage() {
             )}
 
             {/* 校园经历 */}
-            {sections.campus && (
+            {activeModule === "campus" && (
               <div className="mt-6">
                 <div className="text-sm font-semibold text-neutral-800">
                   校园经历
@@ -1063,7 +1096,7 @@ export default function EditorDetailPage() {
                       <label className="mt-3 block text-xs text-neutral-600">
                         主要工作与成果
                         <textarea
-                          className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                          className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                           rows={3}
                           value={c.desc}
                           onChange={(e) =>
@@ -1084,7 +1117,7 @@ export default function EditorDetailPage() {
             )}
 
             {/* 获奖经历 */}
-            {sections.awards && (
+            {activeModule === "awards" && (
               <div className="mt-6">
                 <div className="text-sm font-semibold text-neutral-800">
                   获奖经历
@@ -1131,7 +1164,7 @@ export default function EditorDetailPage() {
                       <label className="mt-3 block text-xs text-neutral-600">
                         简要说明
                         <textarea
-                          className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                          className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                           rows={3}
                           value={a.desc}
                           onChange={(e) =>
@@ -1152,7 +1185,7 @@ export default function EditorDetailPage() {
             )}
 
             {/* 技能 */}
-            {sections.skills && (
+            {activeModule === "skills" && (
               <div className="mt-6">
                 <div className="text-sm font-semibold text-neutral-800">技能</div>
                 <div className="mt-3 space-y-3">
@@ -1180,8 +1213,7 @@ export default function EditorDetailPage() {
                       <label className="block text-xs text-neutral-600">
                         技能条目（可用换行/逗号/斜杠分隔）
                         <textarea
-                          className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
-                          rows={3}
+                          className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                           value={(c.items || []).join("\n")}
                           onChange={(e) =>
                             updateSkillCategoryItems(idx, e.target.value)
@@ -1203,7 +1235,7 @@ export default function EditorDetailPage() {
 
           {/* Medium: preview */}
           <div className="space-y-3">
-            <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+          <div className="rounded-[26px] border border-white/70 bg-white/85 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-neutral-800">
                   岗位匹配分析（AI）
@@ -1274,8 +1306,8 @@ export default function EditorDetailPage() {
             
 
             {/* 模板切换 */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-              <div className="text-sm font-semibold text-neutral-800">模板</div>
+            <div className="rounded-[26px] border border-white/70 bg-white/85 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+              <div className="mb-3 text-sm font-semibold tracking-tight text-slate-800">模板</div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {([
                   ["classic", "Classic 单栏"],
@@ -1286,10 +1318,10 @@ export default function EditorDetailPage() {
                   <button
                     key={key}
                     className={
-                      "rounded-xl px-3 py-2 text-sm font-medium " +
+                      "rounded-2xl px-4 py-2.5 text-sm font-medium transition-all duration-300 " +
                       (template === key
-                        ? "bg-neutral-900 text-white"
-                        : "bg-white text-neutral-900 shadow-sm hover:shadow")
+                        ? "bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_55%,#334155_100%)] text-white shadow-[0_8px_24px_rgba(15,23,42,0.16)]"
+                        : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50")
                     }
                     onClick={() => setTemplate(key)}
                   >
@@ -1299,7 +1331,19 @@ export default function EditorDetailPage() {
               </div>
             </div>
 
-            <ResumePreview resume={resume} template={template} />
+            <div className="rounded-[28px] border border-white/70 bg-white/70 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl md:p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-slate-800">简历预览</div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    当前模板：{template}
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-[24px] bg-[#f8fafc] p-3 md:p-4">
+                <ResumePreview resume={resume} template={template} />
+              </div>
+            </div>
 
             {/* PDF 导出 */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-4">

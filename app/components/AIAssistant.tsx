@@ -413,7 +413,12 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
   };
 
   return (
-    <div className={"rounded-2xl border border-neutral-200 bg-white shadow-sm flex flex-col min-h-0 relative" + (className ?? "")}>
+    <div
+      className={
+        "relative flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-white/70 bg-white/88 shadow-[0_18px_60px_rgba(15,23,42,0.10)] backdrop-blur-xl " +
+        (className ?? "")
+      }
+    >
       <div className="border-b px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold">AI 助手</div>
@@ -421,7 +426,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
           <div className="flex items-center gap-2">
             {isSending ? (
               <button
-                className="rounded-lg bg-neutral-100 px-2 py-1 text-xs text-neutral-800 hover:bg-neutral-200"
+                className="rounded-xl border border-slate-200 bg-white/90 px-2.5 py-1 text-xs text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
                 onClick={cancel}
                 title="停止生成"
               >
@@ -430,7 +435,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
             ) : (
               <>
                 <button
-                  className="rounded-lg bg-neutral-100 px-2 py-1 text-xs text-neutral-800 hover:bg-neutral-200 disabled:opacity-50"
+                  className="rounded-xl border border-slate-200 bg-white/90 px-2.5 py-1 text-xs text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
                   disabled={!lastUserMessage}
                   onClick={retry}
                   title="重试上一条"
@@ -438,7 +443,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
                   重试
                 </button>
                 <button
-                  className="rounded-lg bg-neutral-100 px-2 py-1 text-xs text-neutral-800 hover:bg-neutral-200"
+                  className="rounded-xl border border-slate-200 bg-white/90 px-2.5 py-1 text-xs text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
                   onClick={clearChat}
                   title="清空对话"
                 >
@@ -614,7 +619,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
       {/* 快捷按钮 */}
       <div className="border-b px-3 py-2 flex flex-wrap gap-2">
         <button
-          className="rounded-xl bg-neutral-100 px-3 py-1 text-xs text-neutral-800 hover:bg-neutral-200 disabled:opacity-50"
+          className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-1.5 text-xs text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-50 disabled:opacity-50"
           disabled={isSending}
           onClick={() =>
             sendMessage(
@@ -626,7 +631,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
         </button>
 
         <button
-          className="rounded-xl bg-neutral-100 px-3 py-1 text-xs text-neutral-800 hover:bg-neutral-200 disabled:opacity-50"
+          className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-1.5 text-xs text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-50 disabled:opacity-50"
           disabled={isSending}
           onClick={() =>
             sendMessage(
@@ -638,7 +643,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
         </button>
 
         <button
-          className="rounded-xl bg-neutral-100 px-3 py-1 text-xs text-neutral-800 hover:bg-neutral-200 disabled:opacity-50"
+          className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-1.5 text-xs text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-50 disabled:opacity-50"
           disabled={isSending}
           onClick={() =>
             sendMessage(
@@ -666,8 +671,8 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
               className={
                 "inline-block max-w-[90%] rounded-2xl px-3 py-2 leading-relaxed " +
                 (msg.role === "user"
-                  ? "bg-neutral-900 text-white"
-                  : "bg-neutral-100 text-neutral-900")
+                  ? "bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_55%,#334155_100%)] text-white shadow-[0_8px_22px_rgba(15,23,42,0.16)]"
+                  : "border border-slate-200 bg-slate-50/90 text-slate-800")
               }
             >
               <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -679,7 +684,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
 
       <div className="border-t p-3 flex gap-2">
         <input
-          className="flex-1 rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200 disabled:bg-neutral-50"
+          className="flex-1 rounded-2xl border border-slate-200 bg-white/95 px-4 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100 disabled:bg-slate-50"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="问我如何优化简历…（可要求“给 resume_patch 并应用”）"
@@ -689,7 +694,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
           }}
         />
         <button
-          className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+          className="rounded-2xl bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_55%,#334155_100%)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.22)] disabled:opacity-50"
           disabled={isSending}
           onClick={() => sendMessage()}
         >
