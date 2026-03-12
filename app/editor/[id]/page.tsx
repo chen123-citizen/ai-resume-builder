@@ -46,6 +46,7 @@ export default function EditorDetailPage() {
   const [matchResult, setMatchResult] = useState<AIJDMatchResult | null>(null);
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [usage, setUsage] = useState<any>(null);
 
   const [loadingPage, setLoadingPage] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -112,6 +113,7 @@ const handlePrint = () => {
       }
   
       setMatchResult(json.result);
+      await loadUsage();
     } catch (e) {
       console.error("AI JD 分析异常:", e);
       alert("AI 分析异常，请稍后重试");
@@ -191,6 +193,23 @@ const handlePrint = () => {
     }
   };
 
+  const loadUsage = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+  
+    const token = session?.access_token;
+  
+    const res = await fetch("/api/me/usage", {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+  
+    const json = await res.json();
+    setUsage(json);
+  };
+
   useEffect(() => {
     setExperienceBulletDrafts(
       (resume.experience || []).map((exp) => (exp.bullets || []).join("\n"))
@@ -258,6 +277,10 @@ const handlePrint = () => {
 
     loadResumeFromDB();
   }, [resumeId, router]);
+
+  useEffect(() => {
+    loadUsage();
+  }, []);
 
   // 加载历史版本
   const loadHistoryVersions = async (userIdParam?: string) => {
@@ -1447,6 +1470,18 @@ const handlePrint = () => {
                   </button>
                 )}
               </div>
+              
+              {usage && usage.limit && (
+                <div className="mt-1 text-xs text-neutral-500">
+                  剩余分析次数 {Math.max(usage.limit - usage.jd_match_used, 0)} / {usage.limit}
+                </div>
+              )}
+
+              {usage && usage.plan === "pro" && (
+                <div className="mt-1 text-xs text-green-600">
+                  Pro 用户：无限次分析
+                </div>
+              )}
 
               <div className="mt-3">
                 <button

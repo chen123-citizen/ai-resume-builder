@@ -80,7 +80,6 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
 
-  // patch 相关状态
   const [detectedPatch, setDetectedPatch] = useState<ResumePatch | null>(null);
   const [patchError, setPatchError] = useState<string | null>(null);
   const [undoSnapshot, setUndoSnapshot] = useState<Resume | null>(null);
@@ -95,6 +94,29 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
       return next;
     });
   };
+
+  const [usage, setUsage] = useState<any>(null);
+  useEffect(() => {
+    async function loadUsage() {
+  
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+  
+      const token = session?.access_token;
+  
+      const res = await fetch("/api/me/usage", {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+  
+      const json = await res.json();
+      setUsage(json);
+    }
+  
+    loadUsage();
+  }, []);
 
 
   useEffect(() => {
@@ -486,7 +508,23 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
     >
       <div className="border-b px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-semibold">AI 助手</div>
+        <div className="flex items-center justify-between">
+          <div className="text-lg font-semibold">
+            AI 助手
+          </div>
+
+          {usage && usage.limit && (
+            <div className="text-xs text-neutral-500">
+              剩余 {Math.max(usage.limit - usage.ai_chat_used, 0)} / {usage.limit}
+            </div>
+          )}
+
+          {usage && usage.plan === "pro" && (
+            <div className="text-xs text-green-600">
+              Pro
+            </div>
+          )}
+        </div>
 
           <div className="flex items-center gap-2">
             {isSending ? (
