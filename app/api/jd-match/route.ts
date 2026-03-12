@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { checkUsage } from "@/app/lib/usage";
 
 export const runtime = "nodejs";
 
@@ -48,6 +50,38 @@ export async function POST(req: NextRequest) {
 
     if (!jd) {
       return NextResponse.json({ error: "jd 不能为空" }, { status: 400 });
+    }
+
+    // 1) 获取当前用户
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "").trim();
+
+    if (!token) {
+      return NextResponse.json({ error: "未登录" }, { status: 401 });
+    }
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "未登录" }, { status: 401 });
+    }
+
+    // 2) 检查 JD 匹配次数
+    const usage = await checkUsage(supabase, user.id, "jd_match");
+
+    if (!usage.allowed) {
+      return NextResponse.json(
+        { error: "免费次数已用完，请升级 Pro" },
+        { status: 403 }
+      );
     }
 
     const apiKey = process.env.AI_API_KEY;
@@ -112,6 +146,12 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // 3) 成功后记录一次 JD 匹配使用
+    await supabase.from("usage_records").insert({
+      user_id: user.id,
+      feature_key: "jd_match",
+    });
 
     return NextResponse.json({ success: true, result: parsed });
   } catch (err: any) {

@@ -85,10 +85,17 @@ const handlePrint = () => {
     setMatchResult(null);
   
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      
+      const accessToken = session?.access_token;
+      
       const res = await fetch("/api/jd-match", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({
           resume,

@@ -254,16 +254,24 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
     abortRef.current = ac;
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      
+      const accessToken = session?.access_token;
+      
       const res = await fetch("/api/ai", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         signal: ac.signal,
         body: JSON.stringify({
           message: content,
           resume,
           jd,
           history: buildHistory(),
-          // ✅ 关键：告诉 AI 输出 patch 协议
           patchMode: "resume_patch_v1",
         }),
       });
@@ -271,8 +279,17 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
       const contentType = res.headers.get("content-type") || "";
 
       if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || `请求失败：${res.status}`);
+        let errMsg = `请求失败：${res.status}`;
+      
+        try {
+          const errJson = await res.json();
+          errMsg = errJson?.error || errMsg;
+        } catch {
+          const errText = await res.text();
+          errMsg = errText || errMsg;
+        }
+      
+        throw new Error(errMsg);
       }
 
       // JSON 兜底（非流式）
@@ -401,8 +418,11 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
       setMessagesSafe((prev) => {
         const copy = [...prev];
         const last = copy[copy.length - 1];
-        const errReply =
-          "AI 出错了。\n\n你可以点「重试」再来一次。\n\n错误信息（供调试）：\n" + msg;
+        const isLimitError = msg.includes("免费次数已用完");
+
+        const errReply = isLimitError
+          ? "免费次数已用完，请升级 Pro。"
+          : "AI 出错了。\n\n你可以点「重试」再来一次。\n\n错误信息（供调试）：\n" + msg;
 
         if (last?.role === "assistant") {
           copy[copy.length - 1] = { ...last, content: errReply };

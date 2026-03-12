@@ -1,5 +1,7 @@
 // app/api/ai/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { checkUsage } from "@/app/lib/usage";
 
 export const runtime = "nodejs";
 
@@ -127,6 +129,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "message 不能为空" }, { status: 400 });
     }
 
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "").trim();
+
+    if (!token) {
+      return NextResponse.json({ error: "未登录" }, { status: 401 });
+    }
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "未登录" }, { status: 401 });
+    }
+
+    const usage = await checkUsage(supabase, user.id, "ai_chat");
+
+    if (!usage.allowed) {
+      return NextResponse.json(
+        { error: "免费次数已用完，请升级 Pro" },
+        { status: 403 }
+      );
+    }
+
     const apiKey = process.env.AI_API_KEY;
     const baseUrl = process.env.AI_BASE_URL || "https://api.openai.com/v1";
     const model = process.env.AI_MODEL || "gpt-4o-mini";
@@ -192,6 +224,11 @@ ${resume ? JSON.stringify(resume, null, 2) : "（未提供简历）"}
     if (!resp.body) {
       return NextResponse.json({ error: "云端 AI 未返回流（resp.body 为空）" }, { status: 500 });
     }
+    // 👇 记录一次 AI 使用
+    await supabase.from("usage_records").insert({
+      user_id: user.id,
+      feature_key: "ai_chat"
+    });
 
     // ✅ 透传 SSE 流给前端
     return new Response(resp.body, {
