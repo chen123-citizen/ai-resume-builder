@@ -56,6 +56,7 @@ type Props = {
   jd: string;
   setResume: React.Dispatch<React.SetStateAction<Resume>>;
   className?: string;
+  onUpgradeRequired?: () => void;
 };
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
@@ -68,7 +69,7 @@ const PROGRESS_STEPS = [
   "正在组织输出结构…",
 ] as const;
 
-export default function AIAssistant({ resume, jd, setResume, className }: Props) {
+export default function AIAssistant({ resume, jd, setResume, className, onUpgradeRequired, }: Props) {
   const pathname = usePathname();
   const resumeId = pathname.split("/").pop() || "unknown";
   
@@ -441,6 +442,10 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
         const copy = [...prev];
         const last = copy[copy.length - 1];
         const isLimitError = msg.includes("免费次数已用完");
+
+        if (isLimitError) {
+          onUpgradeRequired?.();
+        }
 
         const errReply = isLimitError
           ? "免费次数已用完，请升级 Pro。"

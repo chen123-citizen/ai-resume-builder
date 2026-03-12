@@ -63,6 +63,9 @@ export default function EditorDetailPage() {
     "basics" | "education" | "experience" | "campus" | "awards" | "skills"
   >("basics");
 
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeSource, setUpgradeSource] = useState<"ai_chat" | "jd_match" | null>(null);
+
 const hasLoadedRef = useRef(false);
 const printRef = useRef<HTMLDivElement | null>(null);
 
@@ -108,6 +111,13 @@ const handlePrint = () => {
   
       if (!res.ok || !json.success) {
         console.error("AI JD 分析失败:", json.error);
+      
+        if (json?.error?.includes("免费次数已用完")) {
+          setUpgradeSource("jd_match");
+          setShowUpgradeModal(true);
+          return;
+        }
+      
         alert(json.error || "AI 分析失败");
         return;
       }
@@ -719,6 +729,13 @@ const handlePrint = () => {
               href="/dashboard"
             >
               返回 Dashboard
+            </a>
+
+            <a
+              className="rounded-2xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-400"
+              href="/pricing"
+            >
+              升级 Pro
             </a>
           </div>
         </div>
@@ -1470,7 +1487,7 @@ const handlePrint = () => {
                   </button>
                 )}
               </div>
-              
+
               {usage && usage.limit && (
                 <div className="mt-1 text-xs text-neutral-500">
                   剩余分析次数 {Math.max(usage.limit - usage.jd_match_used, 0)} / {usage.limit}
@@ -1586,12 +1603,16 @@ const handlePrint = () => {
 
       {/* Desktop dock */}
       <aside className="hidden xl:block fixed right-6 top-6 bottom-6 w-[360px] z-40">
-        <AIAssistant
-          resume={resume}
-          jd={jdText}
-          setResume={setResume}
-          className="h-full"
-        />
+      <AIAssistant
+        resume={resume}
+        jd={jdText}
+        setResume={setResume}
+        className="h-full"
+        onUpgradeRequired={() => {
+          setUpgradeSource("ai_chat");
+          setShowUpgradeModal(true);
+        }}
+      />
       </aside>
 
       {/* Mobile/tablet drawer */}
@@ -1615,6 +1636,10 @@ const handlePrint = () => {
                 jd={jdText}
                 setResume={setResume}
                 className="h-full"
+                onUpgradeRequired={() => {
+                  setUpgradeSource("ai_chat");
+                  setShowUpgradeModal(true);
+                }}
               />
             </div>
           </div>
@@ -1659,6 +1684,55 @@ const handlePrint = () => {
           }
         }
       `}</style>
+
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-[100]">
+          <button
+            aria-label="关闭升级弹窗"
+            className="absolute inset-0 bg-black/35"
+            onClick={() => setShowUpgradeModal(false)}
+          />
+          <div className="absolute left-1/2 top-1/2 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/70 bg-white p-6 shadow-2xl">
+            <div className="text-lg font-semibold text-slate-900">
+              升级 Pro，解锁无限使用
+            </div>
+
+            <div className="mt-2 text-sm text-slate-600">
+              {upgradeSource === "ai_chat"
+                ? "你的 AI 助手免费次数已用完。升级 Pro 后可无限对话。"
+                : "你的 JD 匹配免费次数已用完。升级 Pro 后可无限分析。"}
+            </div>
+
+            <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+              <div>Pro 权益包括：</div>
+              <ul className="mt-2 list-disc pl-5 space-y-1">
+                <li>AI 助手无限使用</li>
+                <li>JD 匹配分析无限使用</li>
+                <li>后续高级功能优先开放</li>
+              </ul>
+            </div>
+
+            <div className="mt-5 flex gap-3">
+              <button
+                className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => setShowUpgradeModal(false)}
+              >
+                稍后再说
+              </button>
+
+              <button
+                className="flex-1 rounded-2xl bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_55%,#334155_100%)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] hover:-translate-y-0.5 transition-all"
+                onClick={() => {
+                  setShowUpgradeModal(false);
+                  router.push("/pricing");
+                }}
+              >
+                升级 Pro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
