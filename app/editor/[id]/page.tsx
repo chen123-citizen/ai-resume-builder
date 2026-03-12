@@ -39,6 +39,7 @@ export default function EditorDetailPage() {
   const resumeId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
   const [resume, setResume] = useState<Resume>(defaultResume);
+  const [skillDrafts, setSkillDrafts] = useState<string[]>([]);
   const [template, setTemplate] = useState<TemplateKey>("classic");
 
   const [jdText, setJdText] = useState("");
@@ -54,6 +55,8 @@ export default function EditorDetailPage() {
   const [historyVersions, setHistoryVersions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [undoSnapshot, setUndoSnapshot] = useState<Resume | null>(null);
+
+  const [experienceBulletDrafts, setExperienceBulletDrafts] = useState<string[]>([]);
 
   const [activeModule, setActiveModule] = useState<
     "basics" | "education" | "experience" | "campus" | "awards" | "skills"
@@ -180,6 +183,18 @@ const handlePrint = () => {
       setActiveModule("basics");
     }
   };
+
+  useEffect(() => {
+    setExperienceBulletDrafts(
+      (resume.experience || []).map((exp) => (exp.bullets || []).join("\n"))
+    );
+  }, [resume.experience]);
+
+  useEffect(() => {
+    setSkillDrafts(
+      (resume.skills?.categories || []).map((c) => (c.items || []).join("\n"))
+    );
+  }, [resume.skills]);
 
   // 读取数据库中的简历；失败时回退到本地缓存
   useEffect(() => {
@@ -513,6 +528,30 @@ const handlePrint = () => {
     }));
   };
 
+  const updateExperienceBulletDraft = (index: number, raw: string) => {
+    setExperienceBulletDrafts((prev) => {
+      const next = [...prev];
+      next[index] = raw;
+      return next;
+    });
+  };
+  
+  const commitExperienceBulletDraft = (index: number) => {
+    const raw = experienceBulletDrafts[index] ?? "";
+    const bullets = raw
+      .split("\n")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  
+    updateExperienceItem(index, { bullets });
+  
+    setExperienceBulletDrafts((prev) => {
+      const next = [...prev];
+      next[index] = bullets.join("\n");
+      return next;
+    });
+  };
+
   const addExperienceItem = () => {
     setResume((r) => ({
       ...r,
@@ -550,12 +589,21 @@ const handlePrint = () => {
     }));
   };
 
-  const updateSkillCategoryItems = (index: number, raw: string) => {
+  const updateSkillDraft = (index: number, raw: string) => {
+    setSkillDrafts((prev) => {
+      const next = [...prev];
+      next[index] = raw;
+      return next;
+    });
+  };
+  
+  const commitSkillDraft = (index: number) => {
+    const raw = skillDrafts[index] ?? "";
     const items = raw
       .split(/\n|\/|,|，/)
       .map((x) => x.trim())
       .filter(Boolean);
-
+  
     setResume((r) => ({
       ...r,
       skills: {
@@ -565,6 +613,12 @@ const handlePrint = () => {
         ),
       },
     }));
+  
+    setSkillDrafts((prev) => {
+      const next = [...prev];
+      next[index] = items.join("\n");
+      return next;
+    });
   };
 
   const addSkillCategory = () => {
@@ -1103,6 +1157,27 @@ const handlePrint = () => {
                           }
                         />
                       </label>
+
+                      <label className="mt-3 block text-xs text-neutral-600">
+                        STAR / 优化后要点（每行一条）
+                        <textarea
+                          className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                          rows={5}
+                          value={experienceBulletDrafts[idx] ?? ""}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+
+                            updateExperienceBulletDraft(idx, raw);
+
+                            const bullets = raw
+                              .split("\n")
+                              .map((x) => x.trim())
+                              .filter(Boolean);
+
+                            updateExperienceItem(idx, { bullets });
+                          }}
+                        />
+                      </label>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <button
                           className="rounded-xl bg-neutral-900 px-4 py-2 text-xs font-medium text-white hover:bg-neutral-800"
@@ -1110,13 +1185,17 @@ const handlePrint = () => {
                             const summary = exp.summary ?? "";
                             const { bullets } = starifySummary(summary);
                             updateExperienceItem(idx, { bullets });
+                            updateExperienceBulletDraft(idx, bullets.join("\n"));
                           }}
                         >
                           一键 STAR（规则版）
                         </button>
                         <button
                           className="rounded-xl bg-white px-4 py-2 text-xs font-medium text-neutral-900 shadow-sm hover:shadow"
-                          onClick={() => updateExperienceItem(idx, { bullets: [] })}
+                          onClick={() => {
+                            updateExperienceItem(idx, { bullets: [] });
+                            updateExperienceBulletDraft(idx, "");
+                          }}
                         >
                           清空 bullets
                         </button>
@@ -1325,10 +1404,9 @@ const handlePrint = () => {
                         技能条目（可用换行/逗号/斜杠分隔）
                         <textarea
                           className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                          value={(c.items || []).join("\n")}
-                          onChange={(e) =>
-                            updateSkillCategoryItems(idx, e.target.value)
-                          }
+                          value={skillDrafts[idx] ?? ""}
+                          onChange={(e) => updateSkillDraft(idx, e.target.value)}
+                          onBlur={() => commitSkillDraft(idx)}
                         />
                       </label>
                     </div>

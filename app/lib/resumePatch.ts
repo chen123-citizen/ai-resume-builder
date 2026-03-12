@@ -47,11 +47,31 @@ export function validateResumePatch(patch: ResumePatch): { ok: boolean; reason?:
     return { ok: false, reason: `一次改动过多（>${MAX_OPS}项），请分步应用。` };
   }
 
+  // 禁止整对象替换，要求 AI 改为逐字段 set
+  const forbiddenWholeObjectPaths = [
+    /^campus\[\d+\]$/,
+    /^experience\[\d+\]$/,
+    /^education\[\d+\]$/,
+    /^awards\[\d+\]$/,
+    /^skills\.categories\[\d+\]$/,
+  ];
+
   // 禁止改手机号/邮箱（除非你以后想允许，可以删掉）
   const forbiddenPrefixes = ["basics.phone", "basics.email"];
+
   for (const op of patch.operations) {
     if (forbiddenPrefixes.some((p) => op.path.startsWith(p))) {
       return { ok: false, reason: "为安全起见，暂不允许自动修改手机号/邮箱。请手动改。" };
+    }
+
+    if (
+      op.op === "set" &&
+      forbiddenWholeObjectPaths.some((re) => re.test(op.path))
+    ) {
+      return {
+        ok: false,
+        reason: `暂不允许整对象替换：${op.path}，请改为逐字段 set。`,
+      };
     }
   }
 
@@ -91,6 +111,96 @@ export function applyResumePatch(resume: Resume, patch: ResumePatch): Resume {
 }
 
 // ---------- helpers ----------
+
+function normalizePath(path: string): string {
+  return path
+    .replace(/\.organization\b/g, ".org")
+    .replace(/\.position\b/g, ".role")
+    .replace(/\.title\b/g, ".role")
+    .replace(/\.description\b/g, ".desc")
+    .replace(/\.summary\b/g, ".desc");
+}
+
+function normalizeValueByPath(path: string, value: any): any {
+  // campus[i] 整对象替换时，兼容 AI 常见字段名
+  if (/^campus\[\d+\]$/.test(path) && value && typeof value === "object" && !Array.isArray(value)) {
+    return {
+      org: value.org ?? value.organization ?? "",
+      role: value.role ?? value.position ?? value.title ?? "",
+      start: value.start ?? "",
+      end: value.end ?? "",
+      desc: value.desc ?? value.description ?? value.summary ?? "",
+    };
+  }
+
+  // experience[i] 整对象替换时兼容别名
+  if (/^experience\[\d+\]$/.test(path) && value && typeof value === "object" && !Array.isArray(value)) {
+    return {
+      company: value.company ?? value.organization ?? "",
+      role: value.role ?? value.position ?? value.title ?? "",
+      city: value.city ?? "",
+      start: value.start ?? "",
+      end: value.end ?? "",
+      summary: value.summary ?? value.description ?? "",
+      bullets: Array.isArray(value.bullets)
+        ? value.bullets
+        : Array.isArray(value.highlights)
+        ? value.highlights
+        : [],
+    };
+  }
+
+  // skills.categories[i] 整对象替换时兼容别名
+  if (
+    /^skills\.categories\[\d+\]$/.test(path) &&
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  ) {
+    return {
+      name: value.name ?? value.label ?? value.title ?? "技能",
+      items: Array.isArray(value.items)
+        ? value.items
+        : Array.isArray(value.list)
+        ? value.list
+        : Array.isArray(value.keywords)
+        ? value.keywords
+        : [],
+    };
+  }
+
+  return value;
+}
+
+export function normalizeResumePatch(patch: ResumePatch): ResumePatch {
+  return {
+    ...patch,
+    operations: patch.operations.map((op) => {
+      if (op.op === "set") {
+        const nextPath = normalizePath(op.path);
+        return {
+          ...op,
+          path: nextPath,
+          value: normalizeValueByPath(nextPath, op.value),
+        };
+      }
+
+      if (op.op === "replaceArray") {
+        const nextPath = normalizePath(op.path);
+        return {
+          ...op,
+          path: nextPath,
+          value: Array.isArray(op.value) ? op.value : [],
+        };
+      }
+
+      return {
+        ...op,
+        path: normalizePath(op.path),
+      } as Operation;
+    }),
+  };
+}
 
 function deepClone<T>(obj: T): T {
   // Resume 基本是 JSON 结构，用这个最省事

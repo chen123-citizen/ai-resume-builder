@@ -4,13 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { Resume } from "@/app/lib/resumeSchema";
 import ReactMarkdown from "react-markdown";
+import { supabase } from "@/app/lib/supabase";
 import {
   applyResumePatch,
   extractResumePatchFromText,
   type ResumePatch,
   validateResumePatch,
+  normalizeResumePatch,
 } from "@/app/lib/resumePatch";
-import { supabase } from "@/app/lib/supabase";
+
+
 
 function stripResumePatchForDisplay(text: string) {
   const START = "<<<RESUME_PATCH_START>>>";
@@ -93,6 +96,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
     });
   };
 
+
   useEffect(() => {
     if (!resumeId) return;
   
@@ -166,8 +170,10 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
 
   // 从最新 assistant 文本里提取 patch（只在“完整块出现后”才会成功）
   const tryDetectPatch = (assistantFullText: string) => {
-    const patch = extractResumePatchFromText(assistantFullText);
-    if (!patch) return;
+    const rawPatch = extractResumePatchFromText(assistantFullText);
+    if (!rawPatch) return;
+
+    const patch = normalizeResumePatch(rawPatch);
 
     const v = validateResumePatch(patch);
     if (!v.ok) {
@@ -189,6 +195,7 @@ export default function AIAssistant({ resume, jd, setResume, className }: Props)
     setUndoSnapshot(JSON.parse(JSON.stringify(resume)));
 
     // 应用 patch
+    const normalizedPatch = normalizeResumePatch(detectedPatch);
     const next = applyResumePatch(resume, detectedPatch);
     setResume(next);
 

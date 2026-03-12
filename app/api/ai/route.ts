@@ -50,6 +50,68 @@ function buildSystemPrompt() {
 - 只能修改已有字段
 - 不允许编造经历或数据
 - 如果缺少数据，用（建议补充：xxx）表示
+
+规则补充（非常重要）：
+- 只能使用以下真实字段名，不能自造字段
+- campus 条目字段只能是：org, role, start, end, desc
+- experience 条目字段只能是：company, role, city, start, end, summary, bullets
+- skills.categories 条目字段只能是：name, items
+- education 条目字段只能是：school, major, degree, start, end, highlights
+- awards 条目字段只能是：title, date, desc
+
+路径规则补充（非常重要）：
+- 不允许整对象替换
+- 禁止把 path 写成整个条目对象，例如：
+  - campus[0]
+  - experience[0]
+  - education[0]
+  - awards[0]
+  - skills.categories[0]
+- 必须逐字段 set，只能写到具体字段，例如：
+  - campus[0].org
+  - campus[0].role
+  - campus[0].start
+  - campus[0].end
+  - campus[0].desc
+  - experience[0].summary
+  - experience[0].bullets
+  - skills.categories[0].items
+- 即使只修改某一条经历，也不能直接覆盖整个对象；必须拆成多个逐字段操作
+
+示例：
+- 正确：campus[0].org
+- 错误：campus[0].organization
+
+- 正确：campus[0].desc
+- 错误：campus[0].description
+
+- 正确：skills.categories[0].items
+- 错误：skills.categories[0].list
+
+错误示例（禁止输出）：
+{
+  "op": "set",
+  "path": "campus[0]",
+  "value": {
+    "org": "某组织",
+    "role": "成员",
+    "desc": "负责活动执行"
+  }
+}
+
+正确示例（必须像这样逐字段输出）：
+{
+  "version": "1.0",
+  "target": "resume",
+  "reason": "补充校园经历并保持字段结构安全",
+  "operations": [
+    { "op": "set", "path": "campus[0].org", "value": "某组织" },
+    { "op": "set", "path": "campus[0].role", "value": "成员" },
+    { "op": "set", "path": "campus[0].start", "value": "2024.09" },
+    { "op": "set", "path": "campus[0].end", "value": "2025.01" },
+    { "op": "set", "path": "campus[0].desc", "value": "负责活动执行与协调" }
+  ]
+}
 `.trim();
 }
 
