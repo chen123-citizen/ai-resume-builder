@@ -716,6 +716,20 @@ const handlePrint = () => {
             </p>
           </div>
 
+          {usage && (
+            <div
+              className={`rounded-full px-3 py-1 text-xs font-semibold 
+                ${
+                  usage.plan === "pro"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-slate-100 text-slate-600"
+                }`
+              }
+            >
+              {usage.plan === "pro" ? "Pro Plan ✨" : "Free Plan"}
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-3">
             <button
               className="rounded-2xl border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"

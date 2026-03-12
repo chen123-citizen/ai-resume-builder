@@ -23,9 +23,10 @@ export default function PricingPage() {
                 <div className="text-sm font-semibold">Pro</div>
                 <div className="mt-3 text-3xl font-bold">即将上线</div>
                 <ul className="mt-4 space-y-2 text-sm text-slate-200">
-                  <li>AI 助手无限使用</li>
-                  <li>JD 匹配无限分析</li>
-                  <li>优先体验高级功能</li>
+                  <li>无限 AI 简历优化</li>
+                  <li>无限 JD 匹配分析</li>
+                  <li>更高效针对岗位优化简历</li>
+                  <li>优先体验新功能</li>
                 </ul>
   
                 <button className="mt-6 w-full rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900">
