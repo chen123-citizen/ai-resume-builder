@@ -72,12 +72,7 @@ const printRef = useRef<HTMLDivElement | null>(null);
 
 const handlePrint = () => {
   if (!printRef.current) return;
-
-  document.body.classList.add("resume-printing");
   window.print();
-  setTimeout(() => {
-    document.body.classList.remove("resume-printing");
-  }, 300);
 };
 
   const handleAnalyzeJD = async () => {
@@ -1670,27 +1665,44 @@ const handlePrint = () => {
       </button>
       <style jsx global>{`
         @media print {
-          body.resume-printing * {
+          html,
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+          }
+
+          body * {
             visibility: hidden !important;
           }
 
-          body.resume-printing #resume-print-area,
-          body.resume-printing #resume-print-area * {
+          #resume-print-area,
+          #resume-print-area * {
             visibility: visible !important;
           }
 
-          body.resume-printing #resume-print-area {
+          #resume-print-area {
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
-            background: white !important;
             margin: 0 !important;
             padding: 0 !important;
+            background: white !important;
           }
 
-          body.resume-printing {
+          /* 去掉 ResumePreview 外壳的滚动、边框、背景、内边距 */
+          #resume-print-area > div {
+            overflow: visible !important;
+            border: 0 !important;
             background: white !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+
+          #resume-print-area > div > div {
+            box-shadow: none !important;
           }
 
           @page {
