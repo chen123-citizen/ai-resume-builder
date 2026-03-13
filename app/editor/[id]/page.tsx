@@ -59,6 +59,7 @@ export default function EditorDetailPage() {
 
   const [experienceBulletDrafts, setExperienceBulletDrafts] = useState<string[]>([]);
 
+
   const [activeModule, setActiveModule] = useState<
     "basics" | "education" | "experience" | "campus" | "awards" | "skills"
   >("basics");
@@ -656,7 +657,7 @@ const handlePrint = () => {
   
     setSkillDrafts((prev) => {
       const next = [...prev];
-      next[index] = items.join("\n");
+      next[index] = raw;
       return next;
     });
   };
@@ -1232,8 +1233,8 @@ const handlePrint = () => {
 
                             const bullets = raw
                               .split("\n")
-                              .map((x) => x.trim())
-                              .filter(Boolean);
+                              .map((x) => x.trim());
+                              
 
                             updateExperienceItem(idx, { bullets });
                           }}
@@ -1462,7 +1463,7 @@ const handlePrint = () => {
                         </button>
                       </div>
                       <label className="block text-xs text-neutral-600">
-                        技能条目（可用换行/逗号/斜杠分隔）
+                        技能条目（可用换行/逗号/斜杠分隔）编辑完成后，点击空白处同步到简历预览
                         <textarea
                           className="mt-1 w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                           value={skillDrafts[idx] ?? ""}

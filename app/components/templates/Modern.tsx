@@ -144,7 +144,7 @@ export default function ModernTemplate({ resume }: { resume: Resume }) {
                     </div>
                   </div>
                   {c.desc ? (
-                    <div className="mt-2 text-neutral-800">{c.desc}</div>
+                    <div className="mt-2 whitespace-pre-line text-neutral-800">{c.desc}</div>
                   ) : null}
                 </div>
               ))}

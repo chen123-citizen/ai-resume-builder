@@ -170,7 +170,7 @@ export default function ClassicTemplate({ resume }: { resume: Resume }) {
                     </div>
                   </div>
                   {c.desc ? (
-                    <div className="mt-1.5 text-neutral-800">{c.desc}</div>
+                    <div className="mt-1.5 whitespace-pre-line text-neutral-800">{c.desc}</div>
                   ) : null}
                 </div>
               ))}

@@ -156,20 +156,20 @@ export default function ATSProTemplate({ resume }: { resume: Resume }) {
           {resume.campus.length ? (
             <div className="space-y-2">
               {resume.campus.map((c, idx) => (
-                <div key={idx} className="flex justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="font-medium">
+                <div key={idx} className="space-y-1">
+                  <div className="flex justify-between gap-4">
+                    <div className="min-w-0 font-medium">
                       {[c.org, c.role].filter(Boolean).join(" | ")}
                     </div>
-
-                    {c.desc ? (
-                      <div className="mt-1 text-neutral-800">{c.desc}</div>
-                    ) : null}
+                    <div className="shrink-0 text-neutral-600">
+                      {[c.start, c.end].filter(Boolean).join(" - ")}
+                    </div>
                   </div>
-
-                  <div className="shrink-0 text-neutral-600">
-                    {[c.start, c.end].filter(Boolean).join(" - ")}
-                  </div>
+                  {c.desc ? (
+                    <div className="whitespace-pre-line text-neutral-800">
+                      {c.desc}
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
