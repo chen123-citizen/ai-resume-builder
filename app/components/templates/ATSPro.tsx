@@ -21,7 +21,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default function ATSProTemplate({ resume }: { resume: Resume }) {
-  const b = resume.basics;
+  const b = resume.basics ?? defaultResume.basics;
   const sections = resume.sections ?? defaultResume.sections;
 
   return (

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ResumePreview, { TemplateKey } from "@/app/components/ResumePreview";
+import html2canvas from "html2canvas-pro";
+import { jsPDF } from "jspdf";
 import {
   Resume,
   defaultResume,
@@ -38,28 +40,37 @@ export default function EditorDetailPage() {
 
   const resumeId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
+  // ===== refs =====
+  const hasLoadedRef = useRef(false);
+  const exportRef = useRef<HTMLDivElement | null>(null);
+
+  // ===== core resume state =====
   const [resume, setResume] = useState<Resume>(defaultResume);
-  const [skillDrafts, setSkillDrafts] = useState<string[]>([]);
   const [template, setTemplate] = useState<TemplateKey>("classic");
 
+  // ===== editor drafts =====
+  const [skillDrafts, setSkillDrafts] = useState<string[]>([]);
+  const [experienceBulletDrafts, setExperienceBulletDrafts] = useState<string[]>([]);
+
+  // ===== JD / AI state =====
   const [jdText, setJdText] = useState("");
   const [matchResult, setMatchResult] = useState<AIJDMatchResult | null>(null);
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [usage, setUsage] = useState<any>(null);
 
+  // ===== page / user state =====
   const [loadingPage, setLoadingPage] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
-  const [historyExpanded, setHistoryExpanded] = useState(false); // 折叠状态
+  // ===== history / undo =====
+  const [historyExpanded, setHistoryExpanded] = useState(false);
   const [historyVersions, setHistoryVersions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [undoSnapshot, setUndoSnapshot] = useState<Resume | null>(null);
 
-  const [experienceBulletDrafts, setExperienceBulletDrafts] = useState<string[]>([]);
-
-
+  // ===== UI state =====
   const [activeModule, setActiveModule] = useState<
     "basics" | "education" | "experience" | "campus" | "awards" | "skills"
   >("basics");
@@ -67,30 +78,93 @@ export default function EditorDetailPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeSource, setUpgradeSource] = useState<"ai_chat" | "jd_match" | null>(null);
 
-const hasLoadedRef = useRef(false);
-const printRef = useRef<HTMLDivElement | null>(null);
+  // ===== helpers =====
+  const loadUsage = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-const handlePrint = () => {
-  if (!printRef.current) return;
-  window.print();
-};
+    const token = session?.access_token;
+
+    const res = await fetch("/api/me/usage", {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    const json = await res.json();
+    setUsage(json);
+  };
+
+  const handlePrint = async () => {
+    if (!exportRef.current) {
+      alert("导出区域不存在，请刷新后重试");
+      return;
+    }
+  
+    try {
+      const canvas = await html2canvas(exportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: true,
+        onclone: (clonedDoc) => {
+          const all = clonedDoc.querySelectorAll("*");
+          all.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            htmlEl.style.backdropFilter = "none";
+            htmlEl.style.filter = "none";
+            htmlEl.style.boxShadow = "none";
+          });
+        },
+      });
+  
+      const imgData = canvas.toDataURL("image/png");
+  
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = 210;
+      const pageHeight = 297;
+  
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  
+      let heightLeft = imgHeight;
+      let position = 0;
+  
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+  
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+  
+      const fileName = (resume?.basics?.name?.trim() || "resume") + ".pdf";
+      pdf.save(fileName);
+    } catch (err) {
+      console.error("导出 PDF 失败：", err);
+      alert("导出 PDF 失败，请稍后重试");
+    }
+  };
 
   const handleAnalyzeJD = async () => {
     if (!jdText.trim()) {
       alert("请先填写岗位JD");
       return;
     }
-  
+
     setIsAnalyzing(true);
     setMatchResult(null);
-  
+
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      
+
       const accessToken = session?.access_token;
-      
+
       const res = await fetch("/api/jd-match", {
         method: "POST",
         headers: {
@@ -102,22 +176,22 @@ const handlePrint = () => {
           jd: jdText,
         }),
       });
-  
+
       const json = await res.json();
-  
+
       if (!res.ok || !json.success) {
         console.error("AI JD 分析失败:", json.error);
-      
+
         if (json?.error?.includes("免费次数已用完")) {
           setUpgradeSource("jd_match");
           setShowUpgradeModal(true);
           return;
         }
-      
+
         alert(json.error || "AI 分析失败");
         return;
       }
-  
+
       setMatchResult(json.result);
       await loadUsage();
     } catch (e) {
@@ -163,57 +237,30 @@ const handlePrint = () => {
       },
     }));
   };
-  
+
   const clearModuleContent = (
     module: "education" | "experience" | "campus" | "awards" | "skills"
   ) => {
     setResume((r) => {
       const next = { ...r };
-  
-      if (module === "education") {
-        next.education = [];
-      }
-      if (module === "experience") {
-        next.experience = [];
-      }
-      if (module === "campus") {
-        next.campus = [];
-      }
-      if (module === "awards") {
-        next.awards = [];
-      }
-      if (module === "skills") {
-        next.skills = { categories: [] };
-      }
-  
+
+      if (module === "education") next.education = [];
+      if (module === "experience") next.experience = [];
+      if (module === "campus") next.campus = [];
+      if (module === "awards") next.awards = [];
+      if (module === "skills") next.skills = { categories: [] };
+
       next.sections = {
         ...r.sections,
         [module]: false,
       };
-  
+
       return next;
     });
-  
+
     if (activeModule === module) {
       setActiveModule("basics");
     }
-  };
-
-  const loadUsage = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-  
-    const token = session?.access_token;
-  
-    const res = await fetch("/api/me/usage", {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    });
-  
-    const json = await res.json();
-    setUsage(json);
   };
 
   useEffect(() => {
@@ -1588,6 +1635,10 @@ const handlePrint = () => {
                   </button>
                 ))}
               </div>
+
+              <div className="text-xs text-neutral-500 mt-2">
+                💡 模板仅作内容预览参考，最重要的是生成的内容，你可以直接复制到自己的简历里。
+              </div>
             </div>
 
             <div className="rounded-[28px] border border-white/70 bg-white/70 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl md:p-5">
@@ -1600,9 +1651,9 @@ const handlePrint = () => {
                 </div>
               </div>
               <div className="rounded-[24px] bg-[#f8fafc] p-3 md:p-4">
-                <div id="resume-print-area" ref={printRef}>
-                  <ResumePreview resume={resume} template={template} />
-                </div>
+              <div ref={exportRef}>
+                <ResumePreview resume={resume} template={template} />
+              </div>
               </div>
             </div>
 
@@ -1663,55 +1714,7 @@ const handlePrint = () => {
       >
         打开 AI
       </button>
-      <style jsx global>{`
-        @media print {
-          html,
-          body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-          }
-
-          body * {
-            visibility: hidden !important;
-          }
-
-          #resume-print-area,
-          #resume-print-area * {
-            visibility: visible !important;
-          }
-
-          #resume-print-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-          }
-
-          /* 去掉 ResumePreview 外壳的滚动、边框、背景、内边距 */
-          #resume-print-area > div {
-            overflow: visible !important;
-            border: 0 !important;
-            background: white !important;
-            padding: 0 !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-          }
-
-          #resume-print-area > div > div {
-            box-shadow: none !important;
-          }
-
-          @page {
-            size: A4;
-            margin: 12mm;
-          }
-        }
-      `}</style>
-
+      
       {showUpgradeModal && (
         <div className="fixed inset-0 z-[100]">
           <button
