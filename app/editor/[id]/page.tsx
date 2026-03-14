@@ -96,55 +96,19 @@ export default function EditorDetailPage() {
     setUsage(json);
   };
 
-  const handlePrint = async () => {
-    if (!exportRef.current) {
-      alert("导出区域不存在，请刷新后重试");
-      return;
-    }
-  
+  const handlePrint = () => {
     try {
-      const canvas = await html2canvas(exportRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: true,
-        onclone: (clonedDoc) => {
-          const all = clonedDoc.querySelectorAll("*");
-          all.forEach((el) => {
-            const htmlEl = el as HTMLElement;
-            htmlEl.style.backdropFilter = "none";
-            htmlEl.style.filter = "none";
-            htmlEl.style.boxShadow = "none";
-          });
-        },
-      });
+      localStorage.setItem(
+        "resume_print_payload",
+        JSON.stringify({
+          resume,
+          template,
+        })
+      );
   
-      const imgData = canvas.toDataURL("image/png");
-  
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageWidth = 210;
-      const pageHeight = 297;
-  
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-  
-      let heightLeft = imgHeight;
-      let position = 0;
-  
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-  
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-  
-      const fileName = (resume?.basics?.name?.trim() || "resume") + ".pdf";
-      pdf.save(fileName);
+      window.open("/print", "_blank");
     } catch (err) {
-      console.error("导出 PDF 失败：", err);
+      console.error("准备打印数据失败：", err);
       alert("导出 PDF 失败，请稍后重试");
     }
   };
