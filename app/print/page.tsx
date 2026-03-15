@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ResumePreview, { TemplateKey } from "@/app/components/ResumePreview";
 import { defaultResume, type Resume } from "@/app/lib/resumeSchema";
+import ATSProTemplate from "@/app/components/templates/ATSPro"; // 可以替换成你需要的模板
+import { TemplateKey } from "@/app/components/ResumePreview";
 
 export default function PrintPage() {
   const [resume, setResume] = useState<Resume | null>(null);
@@ -43,7 +44,8 @@ export default function PrintPage() {
   // 自动打印（可选）
   useEffect(() => {
     if (!resume) return;
-    setTimeout(() => window.print(), 500); // 延迟确保 React 渲染完成
+    // 延迟 500ms 确保 React 渲染完成
+    setTimeout(() => window.print(), 500);
   }, [resume]);
 
   if (!resume) {
@@ -67,16 +69,18 @@ export default function PrintPage() {
           手动打印
         </button>
 
-        {/* 简历渲染区域 */}
-        <div id="print-content">
-          <ResumePreview resume={resume} template={template} />
+        {/* 打印区域 */}
+        <div id="resume-print-area">
+          {template === "atspro" && <ATSProTemplate resume={resume} />}
+          {/* 如果有其他模板，可以在这里添加条件 */}
         </div>
       </div>
 
       {/* 打印样式 */}
       <style jsx global>{`
         @media print {
-          html, body {
+          html,
+          body {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
@@ -94,31 +98,8 @@ export default function PrintPage() {
             display: none !important;
           }
 
-          .print-page {
-            background: white !important;
-          }
-
-          #print-content > div {
+          #resume-print-area {
             overflow: visible !important;
-            border: 0 !important;
-            background: white !important;
-            padding: 0 !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-          }
-
-          #print-content > div > div {
-            box-shadow: none !important;
-          }
-
-          .overflow-auto {
-            overflow: visible !important;
-          }
-
-          .print-page > div,
-          #print-content > div {
-            overflow: visible !important;
-            box-shadow: none !important;
           }
         }
       `}</style>
