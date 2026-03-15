@@ -31,22 +31,6 @@ export default function CompactTemplate({ resume }: { resume: Resume }) {
             <div>{[b.city, b.phone, b.email].filter(Boolean).join(" · ")}</div>
             {b.links?.length ? <div>{b.links.join(" · ")}</div> : null}
           </div>
-
-          {b.showPhoto && (
-            <div className="w-16 h-16 rounded-full overflow-hidden border border-neutral-200 bg-neutral-100 flex items-center justify-center">
-              {b.photo ? (
-                <img
-                  src={b.photo}
-                  className="w-full h-full object-cover"
-                  alt="avatar"
-                />
-              ) : (
-                <span className="text-[9px] text-neutral-400">
-                  Photo
-                </span>
-              )}
-            </div>
-          )}
         </div>
       </div>
 

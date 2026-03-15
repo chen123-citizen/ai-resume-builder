@@ -32,22 +32,6 @@ export default function ModernTemplate({ resume }: { resume: Resume }) {
             <div>{[b.city, b.phone].filter(Boolean).join(" · ")}</div>
             <div>{[b.email, ...b.links].filter(Boolean).join(" · ")}</div>
           </div>
-
-          {b.showPhoto && (
-            <div className="w-20 h-20 rounded-full overflow-hidden border border-neutral-200 bg-neutral-100 flex items-center justify-center">
-              {b.photo ? (
-                <img
-                  src={b.photo}
-                  className="w-full h-full object-cover"
-                  alt="avatar"
-                />
-              ) : (
-                <span className="text-[10px] text-neutral-400">
-                  Photo
-                </span>
-              )}
-            </div>
-          )}
         </div>
       </div>
       </div>

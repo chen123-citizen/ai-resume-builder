@@ -29,22 +29,6 @@ export default function ATSProTemplate({ resume }: { resume: Resume }) {
 
       {/* Header */}
       <div className="border-b pb-3 mb-4 relative">
-        {b.showPhoto && (
-          <div className="absolute right-0 top-0 w-16 h-16 rounded-full overflow-hidden border border-neutral-200 bg-neutral-100 flex items-center justify-center">
-            {b.photo ? (
-              <img
-                src={b.photo}
-                className="w-full h-full object-cover"
-                alt="avatar"
-              />
-            ) : (
-              <span className="text-[9px] text-neutral-400">
-                Photo
-              </span>
-            )}
-          </div>
-        )}
-
         <div
           className="text-3xl font-bold tracking-tight"
           style={{ color: accent }}

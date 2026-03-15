@@ -98,14 +98,16 @@ export default function EditorDetailPage() {
 
   const handlePrint = () => {
     try {
-      localStorage.setItem(
-        "resume_print_payload",
-        JSON.stringify({
-          resume,
-          template,
-        })
-      );
+      // 准备打印数据，resume 已删除头像相关字段
+      const payload = {
+        resume,
+        template,
+      };
   
+      // 写入 localStorage
+      localStorage.setItem("resume_print_payload", JSON.stringify(payload));
+  
+      // 打开打印页
       window.open("/print", "_blank");
     } catch (err) {
       console.error("准备打印数据失败：", err);
@@ -954,75 +956,6 @@ export default function EditorDetailPage() {
                   ))}
                 </div>
 
-                <label className="mt-4 flex items-center gap-2 text-xs text-neutral-700">
-                  <input
-                    type="checkbox"
-                    checked={resume.basics.showPhoto ?? false}
-                    onChange={(e) =>
-                      setResume((r) => ({
-                        ...r,
-                        basics: {
-                          ...r.basics,
-                          showPhoto: e.target.checked,
-                        },
-                      }))
-                    }
-                  />
-                  显示头像
-                </label>
-
-                <div className="mt-4">
-                  <div className="text-xs text-neutral-600">头像</div>
-
-                  <div className="mt-2 flex items-center gap-3">
-                    {resume.basics.photo ? (
-                      <img
-                        src={resume.basics.photo}
-                        className="h-16 w-16 rounded-lg border border-neutral-200 object-cover"
-                        alt="头像预览"
-                      />
-                    ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-neutral-300 text-xs text-neutral-400">
-                        无头像
-                      </div>
-                    )}
-
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          setResume((r) => ({
-                            ...r,
-                            basics: {
-                              ...r.basics,
-                              photo: reader.result as string,
-                            },
-                          }));
-                        };
-                        reader.readAsDataURL(file);
-                      }}
-                    />
-
-                    {resume.basics.photo && (
-                      <button
-                        className="text-xs text-red-500 hover:underline"
-                        onClick={() =>
-                          setResume((r) => ({
-                            ...r,
-                            basics: { ...r.basics, photo: "" },
-                          }))
-                        }
-                      >
-                        删除
-                      </button>
-                    )}
-                  </div>
-                </div>
               </div>
             )}
             {/* 教育背景 */}

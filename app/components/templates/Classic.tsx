@@ -47,22 +47,6 @@ export default function ClassicTemplate({ resume }: { resume: Resume }) {
               </div>
             )}
           </div>
-
-          {b.showPhoto && (
-            <div className="shrink-0">
-              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-neutral-50">
-                {b.photo ? (
-                  <img
-                    src={b.photo}
-                    className="h-full w-full object-cover"
-                    alt="avatar"
-                  />
-                ) : (
-                  <span className="text-[10px] text-neutral-400">Photo</span>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
