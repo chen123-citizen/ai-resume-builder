@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const WEEKLY_CHECKOUT_URL = process.env.LEMON_WEEKLY_CHECKOUT_URL;
+const MONTHLY_CHECKOUT_URL = process.env.LEMON_MONTHLY_CHECKOUT_URL;
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -9,15 +12,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing params" }, { status: 400 });
     }
 
-    // 👉 这里先不调用 Lemon API，先返回测试数据
-    console.log("创建支付:", { plan, userId });
+    let checkoutUrl = "";
+
+    if (plan === "weekly") {
+      checkoutUrl = WEEKLY_CHECKOUT_URL || "";
+    } else if (plan === "monthly") {
+      checkoutUrl = MONTHLY_CHECKOUT_URL || "";
+    } else {
+      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
+    }
+
+    if (!checkoutUrl) {
+      return NextResponse.json(
+        { error: "Missing checkout URL in env" },
+        { status: 500 }
+      );
+    }
+
+    console.log("创建支付:", { plan, userId, checkoutUrl });
 
     return NextResponse.json({
       success: true,
-      message: "create-checkout working",
+      checkoutUrl,
     });
   } catch (err) {
-    console.error(err);
+    console.error("create-checkout error:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
