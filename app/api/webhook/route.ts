@@ -33,18 +33,18 @@ export async function POST(req: NextRequest) {
   const event = body.meta?.event_name;
 
   if (event === "order_created") {
-    const email = body.data?.attributes?.user_email;
+    const userId = body.meta?.custom_data?.user_id;
 
-    console.log("用户付款成功:", email);
+    console.log("用户付款成功:", userId);
 
     // TODO: 在这里写你自己的逻辑
     // 比如：给这个用户加会员
   }
 
   if (event === "order_refunded") {
-    const email = body.data?.attributes?.user_email;
+    const userId = body.meta?.custom_data?.user_id;
 
-    console.log("用户退款:", email);
+    console.log("用户退款:", userId);
 
     // TODO: 取消会员
   }
