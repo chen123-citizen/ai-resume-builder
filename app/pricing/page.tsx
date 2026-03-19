@@ -1,13 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 
 export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<"weekly" | "monthly" | null>(null);
+  const [usage, setUsage] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadUsage() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const token = session?.access_token;
+      if (!token) return;
+
+      const res = await fetch("/api/me/usage", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      setUsage(data);
+    }
+
+    loadUsage();
+  }, []);
+
+  const isPro = usage?.limit === null;
 
   async function handleCheckout(plan: "weekly" | "monthly") {
     try {
+      if (isPro) return;
+
       setLoadingPlan(plan);
 
       const {
@@ -51,9 +80,25 @@ export default function PricingPage() {
     <div className="min-h-screen bg-[#f5f7fb] px-4 py-10">
       <div className="mx-auto max-w-3xl">
         <div className="rounded-[28px] border border-white/70 bg-white/85 p-8 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-          <div className="text-2xl font-semibold text-slate-900">升级 Pro</div>
-          <div className="mt-2 text-sm text-slate-500">
-            解锁 AI 助手与 JD 匹配分析的无限使用权限。
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-semibold text-slate-900">升级 Pro</div>
+              <div className="mt-2 text-sm text-slate-500">
+                解锁 AI 助手与 JD 匹配分析的无限使用权限。
+              </div>
+            </div>
+
+            {usage && (
+              <div
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  isPro
+                    ? "bg-green-100 text-green-700"
+                    : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                {isPro ? "Pro Plan ✨" : "Free Plan"}
+              </div>
+            )}
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -80,10 +125,12 @@ export default function PricingPage() {
 
               <button
                 onClick={() => handleCheckout("weekly")}
-                disabled={loadingPlan === "weekly"}
-                className="mt-6 w-full rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={loadingPlan === "weekly" || isPro}
+                className={`mt-6 w-full rounded-2xl px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
+                  isPro ? "bg-gray-300 text-gray-500" : "bg-white text-slate-900"
+                }`}
               >
-                {loadingPlan === "weekly" ? "跳转中..." : "购买周卡"}
+                {isPro ? "已是 Pro 用户" : loadingPlan === "weekly" ? "跳转中..." : "购买周卡"}
               </button>
             </div>
 
@@ -100,10 +147,12 @@ export default function PricingPage() {
 
               <button
                 onClick={() => handleCheckout("monthly")}
-                disabled={loadingPlan === "monthly"}
-                className="mt-6 w-full rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={loadingPlan === "monthly" || isPro}
+                className={`mt-6 w-full rounded-2xl px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
+                  isPro ? "bg-gray-300 text-gray-500" : "bg-slate-900 text-white"
+                }`}
               >
-                {loadingPlan === "monthly" ? "跳转中..." : "购买月卡"}
+                {isPro ? "已是 Pro 用户" : loadingPlan === "monthly" ? "跳转中..." : "购买月卡"}
               </button>
             </div>
           </div>
