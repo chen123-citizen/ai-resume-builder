@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export async function GET(req: NextRequest) {
-
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.replace("Bearer ", "").trim();
 
@@ -26,11 +25,18 @@ export async function GET(req: NextRequest) {
   // 查询套餐
   const { data: plan } = await supabase
     .from("user_plans")
-    .select("*")
+    .select("plan_type, status, expires_at")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
-  const planType = plan?.plan_type ?? "free";
+  const now = new Date().toISOString();
+
+  const isPro =
+    !!plan &&
+    plan.status === "active" &&
+    !!plan.expires_at &&
+    plan.expires_at > now &&
+    (plan.plan_type === "pro_weekly" || plan.plan_type === "pro_monthly");
 
   // 查询使用次数
   const { data: usage } = await supabase
@@ -38,13 +44,13 @@ export async function GET(req: NextRequest) {
     .select("feature_key")
     .eq("user_id", user.id);
 
-  const aiUsed = usage?.filter(x => x.feature_key === "ai_chat").length ?? 0;
-  const jdUsed = usage?.filter(x => x.feature_key === "jd_match").length ?? 0;
+  const aiUsed = usage?.filter((x) => x.feature_key === "ai_chat").length ?? 0;
+  const jdUsed = usage?.filter((x) => x.feature_key === "jd_match").length ?? 0;
 
   return NextResponse.json({
-    plan: planType,
-    limit: planType === "pro" ? null : 2,
+    plan: isPro ? plan?.plan_type : "free",
+    limit: isPro ? null : 2,
     ai_chat_used: aiUsed,
-    jd_match_used: jdUsed
+    jd_match_used: jdUsed,
   });
 }

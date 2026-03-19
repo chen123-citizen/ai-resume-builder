@@ -12,22 +12,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing params" }, { status: 400 });
     }
 
-    let checkoutUrl = "";
+    let baseCheckoutUrl = "";
 
     if (plan === "weekly") {
-      checkoutUrl = WEEKLY_CHECKOUT_URL || "";
+      baseCheckoutUrl = WEEKLY_CHECKOUT_URL || "";
     } else if (plan === "monthly") {
-      checkoutUrl = MONTHLY_CHECKOUT_URL || "";
+      baseCheckoutUrl = MONTHLY_CHECKOUT_URL || "";
     } else {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
-    if (!checkoutUrl) {
+    if (!baseCheckoutUrl) {
       return NextResponse.json(
         { error: "Missing checkout URL in env" },
         { status: 500 }
       );
     }
+
+    const url = new URL(baseCheckoutUrl);
+
+    url.searchParams.set("checkout[custom][user_id]", userId);
+    url.searchParams.set("checkout[custom][plan]", plan);
+
+    const checkoutUrl = url.toString();
 
     console.log("创建支付:", { plan, userId, checkoutUrl });
 
