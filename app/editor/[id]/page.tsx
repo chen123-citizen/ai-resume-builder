@@ -77,6 +77,7 @@ export default function EditorDetailPage() {
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeSource, setUpgradeSource] = useState<"ai_chat" | "jd_match" | null>(null);
+  const isPro = usage?.limit === null;
 
   // ===== helpers =====
   const loadUsage = async () => {
@@ -729,13 +730,13 @@ export default function EditorDetailPage() {
             <div
               className={`rounded-full px-3 py-1 text-xs font-semibold 
                 ${
-                  usage.plan === "pro"
+                  isPro
                     ? "bg-green-100 text-green-700"
                     : "bg-slate-100 text-slate-600"
                 }`
               }
             >
-              {usage.plan === "pro" ? "Pro Plan ✨" : "Free Plan"}
+              {isPro ? "Pro Plan ✨" : "Free Plan"}
             </div>
           )}
 
@@ -1448,7 +1449,7 @@ export default function EditorDetailPage() {
                 </div>
               )}
 
-              {usage && usage.plan === "pro" && (
+              {usage && isPro && (
                 <div className="mt-1 text-xs text-green-600">
                   Pro 用户：无限次分析
                 </div>
