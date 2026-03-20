@@ -62,12 +62,14 @@ export default function PricingPage() {
 
       const data = await res.json();
 
-      if (!res.ok || !data?.checkoutUrl) {
+      const payUrl = data?.checkoutUrl || data?.qrCodeUrl;
+
+      if (!res.ok || !payUrl) {
         alert(data?.error || "创建支付链接失败，请稍后重试");
         return;
       }
 
-      window.location.href = data.checkoutUrl;
+      window.location.href = payUrl;
     } catch (err) {
       console.error("checkout error:", err);
       alert("创建支付链接失败，请稍后重试");

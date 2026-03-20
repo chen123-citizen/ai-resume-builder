@@ -1,25 +1,14 @@
-import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 
-function verifySignature(
-  rawBody: string,
-  signature: string | null,
-  secret: string
-) {
-  if (!signature) return false;
+function generateXunhuHash(datas: Record<string, string>, secret: string) {
+  const sortedKeys = Object.keys(datas)
+    .filter((key) => key !== "hash" && datas[key] !== "" && datas[key] !== null && datas[key] !== undefined)
+    .sort();
 
-  const hmac = crypto.createHmac("sha256", secret);
-  const digest = hmac.update(rawBody).digest("hex");
-
-  try {
-    return crypto.timingSafeEqual(
-      Buffer.from(digest),
-      Buffer.from(signature)
-    );
-  } catch {
-    return false;
-  }
+  const signStr = sortedKeys.map((key) => `${key}=${datas[key]}`).join("&");
+  return crypto.createHash("md5").update(signStr + secret).digest("hex");
 }
 
 function getExpiryDate(plan: string) {
@@ -40,115 +29,101 @@ function getExpiryDate(plan: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
+    const formData = await req.formData();
+    const body: Record<string, string> = {};
 
+    formData.forEach((value, key) => {
+      body[key] = value.toString();
+    });
+
+    console.log("Xunhu webhook body:", body);
+
+    const secret = process.env.XUNHU_APP_SECRET;
     if (!secret) {
-      return NextResponse.json(
-        { error: "Missing LEMONSQUEEZY_WEBHOOK_SECRET" },
-        { status: 500 }
-      );
+      return new NextResponse("fail", { status: 500 });
     }
 
-    const rawBody = await req.text();
-    const signature = req.headers.get("x-signature");
+    const receivedHash = body.hash || "";
+    const calculatedHash = generateXunhuHash(body, secret);
 
-    const isValid = verifySignature(rawBody, signature, secret);
-
-    if (!isValid) {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    if (receivedHash !== calculatedHash) {
+      console.error("Xunhu webhook sign invalid");
+      return new NextResponse("fail", { status: 401 });
     }
 
-    const body = JSON.parse(rawBody);
-    const event = body?.meta?.event_name;
-
-    console.log("Webhook received:", event);
-
-    if (event === "order_created") {
-      const userId = body?.meta?.custom_data?.user_id;
-      const plan = body?.meta?.custom_data?.plan;
-
-      if (!userId || !plan) {
-        return NextResponse.json(
-          { error: "Missing user_id or plan in custom_data" },
-          { status: 400 }
-        );
-      }
-
-      const expiresAt = getExpiryDate(plan);
-
-      if (!expiresAt) {
-        return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
-      }
-
-      const planType = plan === "weekly" ? "pro_weekly" : "pro_monthly";
-
-      const { error } = await supabaseAdmin
-        .from("user_plans")
-        .upsert(
-          {
-            user_id: userId,
-            plan_type: planType,
-            status: "active",
-            expires_at: expiresAt,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "user_id",
-          }
-        );
-
-        if (error) {
-          console.error("Failed to update user_plans FULL ERROR:", JSON.stringify(error, null, 2));
-          return NextResponse.json(
-            {
-              error: "Failed to update user plan",
-              details: error.message,
-              code: error.code,
-            },
-            { status: 500 }
-          );
-        }
-
-      console.log("用户开通成功:", {
-        userId,
-        planType,
-        expiresAt,
-      });
+    // 只处理已支付
+    if (body.status !== "OD") {
+      return new NextResponse("success");
     }
 
-    if (event === "order_refunded") {
-      const userId = body?.meta?.custom_data?.user_id;
+    let userId = "";
+    let plan = "";
 
-      if (!userId) {
-        return NextResponse.json(
-          { error: "Missing user_id in custom_data" },
-          { status: 400 }
-        );
+    // 优先用 attach
+    if (body.attach) {
+      try {
+        const attach = JSON.parse(body.attach);
+        userId = attach.user_id;
+        plan = attach.plan;
+      } catch (e) {
+        console.error("attach parse error:", e);
       }
+    }
 
-      const { error } = await supabaseAdmin
-        .from("user_plans")
-        .update({
-          status: "refunded",
-          expires_at: new Date().toISOString(),
+    // attach 解析失败时，退回用订单号兜底
+    if ((!userId || !plan) && body.trade_order_id) {
+      const parts = body.trade_order_id.split("_");
+      // resume_{plan}_{userId}_{timestamp}
+      if (parts.length >= 4) {
+        plan = parts[1];
+        userId = parts[2];
+      }
+    }
+
+    if (!userId || !plan) {
+      console.error("Missing userId or plan from xunhu callback");
+      return new NextResponse("fail", { status: 400 });
+    }
+
+    const expiresAt = getExpiryDate(plan);
+    if (!expiresAt) {
+      console.error("Invalid plan:", plan);
+      return new NextResponse("fail", { status: 400 });
+    }
+
+    const planType = plan === "weekly" ? "pro_weekly" : "pro_monthly";
+
+    const { error } = await supabaseAdmin
+      .from("user_plans")
+      .upsert(
+        {
+          user_id: userId,
+          plan_type: planType,
+          status: "active",
+          expires_at: expiresAt,
           updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
+        },
+        {
+          onConflict: "user_id",
+        }
+      );
 
-      if (error) {
-        console.error("Failed to refund user plan:", error);
-        return NextResponse.json(
-          { error: "Failed to update refunded plan" },
-          { status: 500 }
-        );
-      }
-
-      console.log("用户退款成功:", { userId });
+    if (error) {
+      console.error("Failed to update user_plans:", error);
+      return new NextResponse("fail", { status: 500 });
     }
 
-    return NextResponse.json({ ok: true });
+    console.log("Xunhu payment success:", {
+      userId,
+      plan,
+      tradeOrderId: body.trade_order_id,
+      totalFee: body.total_fee,
+    });
+
+    // 虎皮椒要求返回纯文本 success
+    return new NextResponse("success");
   } catch (error) {
-    console.error("Webhook error:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("Xunhu webhook error:", error);
+    return new NextResponse("fail", { status: 500 });
   }
 }
