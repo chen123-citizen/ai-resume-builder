@@ -213,6 +213,14 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
+                {mode === "login" && (
+                  <p
+                    className="mt-2 text-sm text-blue-600 hover:underline cursor-pointer"
+                    onClick={() => router.push("/forgot-password")}
+                  >
+                    忘记密码？
+                  </p>
+                )}
 
                 {mode === "register" && (
                   <div>
