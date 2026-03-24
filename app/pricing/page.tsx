@@ -8,27 +8,48 @@ export default function PricingPage() {
   const [usage, setUsage] = useState<any>(null);
 
   useEffect(() => {
+    let mounted = true;
+  
     async function loadUsage() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-
+  
       const token = session?.access_token;
       if (!token) return;
-
+  
       const res = await fetch("/api/me/usage", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
+  
       if (!res.ok) return;
-
+  
       const data = await res.json();
-      setUsage(data);
+  
+      if (mounted) {
+        setUsage(data);
+      }
     }
-
+  
     loadUsage();
+  
+    // 每 5 秒自动刷新一次，支付完成回到页面后会自动变 Pro
+    const interval = setInterval(loadUsage, 5000);
+  
+    // 切回页面时立即刷新一次
+    function handleFocus() {
+      loadUsage();
+    }
+  
+    window.addEventListener("focus", handleFocus);
+  
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
 
   const isPro = usage?.limit === null;

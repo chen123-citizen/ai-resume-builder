@@ -1,29 +1,35 @@
 export async function checkUsage(
-    supabase: any,
-    userId: string,
-    featureKey: string
+  supabase: any,
+  userId: string,
+  featureKey: string
 ) {
-
   // 查询用户套餐
   const { data: plan } = await supabase
     .from("user_plans")
-    .select("*")
+    .select("plan_type, status, expires_at")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
   // 如果没有套餐，创建 free
   if (!plan) {
     await supabase.from("user_plans").insert({
       user_id: userId,
       plan_type: "free",
-      status: "active"
+      status: "active",
     });
   }
 
-  const currentPlan = plan?.plan_type ?? "free";
+  const now = new Date().toISOString();
+
+  const isPro =
+    !!plan &&
+    plan.status === "active" &&
+    !!plan.expires_at &&
+    plan.expires_at > now &&
+    (plan.plan_type === "pro_weekly" || plan.plan_type === "pro_monthly");
 
   // Pro 无限
-  if (currentPlan === "pro") {
+  if (isPro) {
     return { allowed: true };
   }
 
