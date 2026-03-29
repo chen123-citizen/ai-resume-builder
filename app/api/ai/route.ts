@@ -21,7 +21,7 @@ function buildSystemPrompt() {
 - 回答要具体、可执行，尽量给可直接替换到简历中的句式。
 - 优先结合用户提供的 JD 和简历内容，做针对性建议。
 - 输出风格：中文，条目清晰，尽量简洁。
-- 请用 Markdown 输出（标题、列表、加粗），避免复杂表格。
+- 请用 Markdown 输出（标题、列表、加粗），**严禁使用表格（包括 Markdown 表格和 HTML 表格）**。如需展示对比或数据，请使用列表或分点说明。
 
 如果你的建议可以直接修改用户的简历，请在回答最后追加一个 JSON patch，
 用于自动修改简历。
@@ -192,6 +192,7 @@ ${resume ? JSON.stringify(resume, null, 2) : "（未提供简历）"}
         model,
         temperature: 0.3,
         stream: true, // ✅ 关键：开启流式
+        max_tokens: 8192,
         messages: [
           { role: "system", content: buildSystemPrompt() },
         
